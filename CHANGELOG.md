@@ -7,6 +7,26 @@ semantic versioning.
 ## [Unreleased]
 
 ### Added
+- **Horizontal WebSocket scaling** — the Socket.IO gateway now attaches the
+  `@socket.io/redis-adapter`, so realtime events fan out across every backend
+  instance via Redis pub/sub (a socket on instance A receives events emitted on
+  instance B). Falls back to single-instance mode if the adapter can't attach.
+- **Liveness & readiness probes** — `GET /api/health/live` (no dependencies) and
+  `GET /api/health/ready` (checks PostgreSQL + Redis, returns `503` when a
+  dependency is down) alongside the existing combined `GET /api/health`.
+
+### Changed
+- **Strict startup environment validation** — in production the app now refuses to
+  boot with missing/weak/default JWT secrets (min 32 chars, must differ, no known
+  dev defaults), a non-`postgres(ql)://` `DATABASE_URL`, a missing/invalid
+  `REDIS_URL`, or non-HTTPS `CORS_ORIGINS`/`FRONTEND_URL`. Errors are aggregated
+  into a single clear message.
+- **Trust proxy** enabled so secure cookies and `req.ip` work correctly behind
+  TLS-terminating proxies (Vercel/Render/Railway/Nginx).
+- Docker `HEALTHCHECK` now uses the liveness probe; Render `healthCheckPath` uses
+  the readiness probe.
+
+### Added (security)
 - **Two-factor authentication (TOTP)** — RFC 6238 time-based one-time passwords
   implemented from Node `crypto` (verified against the official RFC 4226/6238 test
   vectors), with: enrollment via QR code / manual key, 10 single-use backup codes,

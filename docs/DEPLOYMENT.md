@@ -42,7 +42,25 @@ Stop with `npm run docker:down`.
 - [ ] Google OAuth redirect URI registered: `https://<api>/api/auth/google/callback`.
 - [ ] Supabase bucket created and `SUPABASE_*` set (otherwise uploads use ephemeral disk).
 - [ ] SMTP credentials set for real OTP/welcome emails.
-- [ ] `https://<api>/api/health` returns `status: ok`.
+- [ ] `https://<api>/api/health/ready` returns `status: ready` (and `/api/health/live` returns `ok`).
+- [ ] Strong, unique `JWT_ACCESS_SECRET` / `JWT_REFRESH_SECRET` (≥32 chars) — the app refuses to boot in production otherwise.
+- [ ] `REDIS_URL` points at a managed Redis (required in production for cache, presence and WebSocket scaling).
+
+## Production readiness
+
+- **Horizontal scaling** — run multiple backend instances behind a load balancer.
+  The Socket.IO Redis adapter shares realtime events across instances, and auth is
+  stateless (JWT), so any instance can serve any socket/request. Use sticky sessions
+  only if you enable long-polling transport; the default is pure WebSocket.
+- **Startup validation** — `validateEnv` fails fast in production on missing/weak
+  secrets, non-HTTPS origins, or an invalid `DATABASE_URL`/`REDIS_URL`.
+- **Health probes** — point the platform's liveness check at `/api/health/live`
+  (no deps) and the readiness/traffic gate at `/api/health/ready` (DB + Redis).
+- **Graceful shutdown** — `enableShutdownHooks()` plus `OnModuleDestroy` close the
+  Prisma and Redis connections cleanly on SIGTERM.
+- **TLS / WSS** — terminate TLS at the proxy; `trust proxy` is enabled so secure
+  cookies and client IPs are correct. The frontend derives `wss://` from the
+  `https://` API origin automatically.
 
 ## CI/CD
 

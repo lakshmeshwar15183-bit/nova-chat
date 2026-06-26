@@ -12,6 +12,7 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
+import { createAdapter } from '@socket.io/redis-adapter';
 import { PrismaService } from '@/common/prisma/prisma.service';
 import { RedisService } from '@/common/redis/redis.service';
 import { JwtPayload } from '../auth/tokens.service';
@@ -43,7 +44,19 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
 
   afterInit(server: Server) {
     this.realtime.setServer(server);
-    this.logger.log('WebSocket gateway initialised');
+
+    // Fan messages out across every backend instance via the Redis adapter so
+    // a socket connected to instance A still receives events emitted on
+    // instance B. This is what makes horizontal scaling work.
+    try {
+      server.adapter(createAdapter(this.redis.publisher, this.redis.subscriber));
+      this.logger.log('WebSocket gateway initialised with Redis adapter (multi-instance)');
+    } catch (err) {
+      // Never block startup on the adapter; fall back to single-instance mode.
+      this.logger.error(
+        `Failed to attach Redis adapter, running single-instance: ${(err as Error).message}`,
+      );
+    }
   }
 
   // ---- Connection lifecycle ------------------------------------------------

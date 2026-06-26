@@ -18,6 +18,10 @@ async function bootstrap() {
 
   app.useLogger(app.get(Logger));
 
+  // Behind TLS-terminating proxies (Vercel/Render/Railway/Nginx) trust the first
+  // proxy hop so secure cookies and req.ip reflect the real client over HTTPS.
+  app.set('trust proxy', 1);
+
   // Serve locally-stored uploads when Supabase Storage is not configured.
   app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/uploads/' });
 
