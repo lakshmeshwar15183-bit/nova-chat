@@ -11,6 +11,7 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
+import { Sanitize } from '@/common/security/sanitize';
 
 export class AttachmentInput {
   @IsEnum(AttachmentType)
@@ -54,6 +55,7 @@ export class SendMessageDto {
   @IsOptional()
   @IsString()
   @MaxLength(10000)
+  @Sanitize()
   content?: string;
 
   @IsOptional()
@@ -70,6 +72,7 @@ export class SendMessageDto {
 export class EditMessageDto {
   @IsString()
   @MaxLength(10000)
+  @Sanitize()
   content: string;
 }
 

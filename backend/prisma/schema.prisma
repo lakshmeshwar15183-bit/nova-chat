@@ -104,6 +104,13 @@ enum ThemePreference {
   SYSTEM
 }
 
+enum ScheduledStatus {
+  PENDING
+  SENT
+  CANCELLED
+  FAILED
+}
+
 // ----------------------------------------------------------------------------
 // Core identity
 // ----------------------------------------------------------------------------
@@ -144,6 +151,12 @@ model User {
   notifications     Notification[]
   callsInitiated    Call[]     @relation("CallInitiator")
   callParticipants  CallParticipant[]
+
+  auditLogs         AuditLog[]
+  drafts            Draft[]
+  scheduledMessages ScheduledMessage[]
+  pollVotes         PollVote[]
+  mentions          Mention[]  @relation("MentionedUser")
 
   @@index([status])
   @@index([lastSeenAt])
@@ -354,6 +367,9 @@ model Message {
   isEdited        Boolean       @default(false)
   editedAt        DateTime?
   deletedForEveryone Boolean    @default(false)
+  deletedAt       DateTime?
+  expiresAt       DateTime?
+  version         Int           @default(0)
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
@@ -368,9 +384,14 @@ model Message {
   deletions       MessageDeletion[]
   starredBy       StarredMessage[]
   pinnedIn        PinnedMessage[]
+  editHistory     MessageEditHistory[]
+  mentions        Mention[]
+  poll            Poll?
 
   @@index([conversationId, createdAt])
   @@index([senderId])
+  @@index([conversationId, deletedAt])
+  @@index([expiresAt])
 }
 
 model Attachment {
@@ -503,4 +524,130 @@ model CallParticipant {
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([callId, userId])
+}
+
+
+// ----------------------------------------------------------------------------
+// Message edit history, mentions, polls, drafts, scheduling
+// ----------------------------------------------------------------------------
+
+model MessageEditHistory {
+  id              String   @id @default(uuid())
+  messageId       String
+  previousContent String?  @db.Text
+  editedAt        DateTime @default(now())
+
+  message         Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+}
+
+model Mention {
+  id        String   @id @default(uuid())
+  messageId String
+  userId    String
+  createdAt DateTime @default(now())
+
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user      User     @relation("MentionedUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId])
+  @@index([userId])
+}
+
+model Poll {
+  id            String       @id @default(uuid())
+  messageId     String       @unique
+  question      String
+  allowMultiple Boolean      @default(false)
+  closesAt      DateTime?
+  closed        Boolean      @default(false)
+  createdAt     DateTime     @default(now())
+
+  message       Message      @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  options       PollOption[]
+  votes         PollVote[]
+}
+
+model PollOption {
+  id      String     @id @default(uuid())
+  pollId  String
+  text    String
+  order   Int        @default(0)
+
+  poll    Poll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  votes   PollVote[]
+
+  @@index([pollId])
+}
+
+model PollVote {
+  id       String     @id @default(uuid())
+  pollId   String
+  optionId String
+  userId   String
+  createdAt DateTime  @default(now())
+
+  poll     Poll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  option   PollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  user     User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([optionId, userId])
+  @@index([pollId])
+}
+
+model Draft {
+  id             String   @id @default(uuid())
+  conversationId String
+  userId         String
+  content        String   @db.Text
+  updatedAt      DateTime @updatedAt
+
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@index([userId])
+}
+
+model ScheduledMessage {
+  id             String          @id @default(uuid())
+  conversationId String
+  senderId       String
+  content        String          @db.Text
+  type           MessageType     @default(TEXT)
+  scheduledFor   DateTime
+  status         ScheduledStatus @default(PENDING)
+  sentMessageId  String?
+  error          String?
+  createdAt      DateTime        @default(now())
+
+  sender         User            @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([status, scheduledFor])
+  @@index([senderId])
+}
+
+// ----------------------------------------------------------------------------
+// Audit log (security / compliance)
+// ----------------------------------------------------------------------------
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String?
+  action     String
+  resource   String?
+  resourceId String?
+  method     String?
+  path       String?
+  statusCode Int?
+  ipAddress  String?
+  userAgent  String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([action])
+  @@index([resource, resourceId])
 }
