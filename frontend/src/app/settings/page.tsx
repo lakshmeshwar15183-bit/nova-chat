@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useTheme } from 'next-themes';
+import { ChevronRight, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { AppPage } from '@/components/app-page';
 import { settingsService } from '@/lib/services';
@@ -22,7 +24,10 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState<UserSettings | null>(null);
 
   useEffect(() => {
-    settingsService.get().then(setSettings).catch(() => undefined);
+    settingsService
+      .get()
+      .then(setSettings)
+      .catch(() => undefined);
   }, []);
 
   const update = async (patch: Partial<UserSettings>) => {
@@ -37,6 +42,22 @@ export default function SettingsPage() {
   return (
     <AppPage title="Settings">
       <div className="space-y-6">
+        <Link
+          href="/settings/security"
+          className="card flex items-center gap-3 p-4 transition hover:bg-slate-50 dark:hover:bg-slate-800/60"
+        >
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-nova-100 text-nova-600 dark:bg-nova-900/40 dark:text-nova-300">
+            <ShieldCheck className="h-5 w-5" />
+          </div>
+          <div className="flex-1">
+            <p className="font-medium text-slate-900 dark:text-white">Security</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              Two-factor authentication &amp; backup codes
+            </p>
+          </div>
+          <ChevronRight className="h-5 w-5 text-slate-400" />
+        </Link>
+
         <Section title="Appearance">
           <Row label="Theme">
             <select

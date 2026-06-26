@@ -9,14 +9,7 @@ export type MessageType =
   | 'SYSTEM'
   | 'POLL';
 export type MessageStatus = 'SENT' | 'DELIVERED' | 'READ';
-export type AttachmentType =
-  | 'IMAGE'
-  | 'VIDEO'
-  | 'AUDIO'
-  | 'VOICE'
-  | 'PDF'
-  | 'ZIP'
-  | 'DOCUMENT';
+export type AttachmentType = 'IMAGE' | 'VIDEO' | 'AUDIO' | 'VOICE' | 'PDF' | 'ZIP' | 'DOCUMENT';
 export type GroupRole = 'MEMBER' | 'ADMIN' | 'OWNER';
 export type ThemePreference = 'LIGHT' | 'DARK' | 'SYSTEM';
 
@@ -190,6 +183,27 @@ export interface AuthResponse {
   accessToken: string;
   refreshToken: string;
   user: User;
+}
+
+export interface TwoFactorChallenge {
+  requiresTwoFactor: true;
+  challengeToken: string;
+}
+
+export type LoginResult = AuthResponse | TwoFactorChallenge;
+
+export function isTwoFactorChallenge(result: LoginResult): result is TwoFactorChallenge {
+  return 'requiresTwoFactor' in result && result.requiresTwoFactor === true;
+}
+
+export interface TwoFactorStatus {
+  enabled: boolean;
+  remainingBackupCodes: number;
+}
+
+export interface TwoFactorSetup {
+  secret: string;
+  otpauthUrl: string;
 }
 
 export interface PaginatedMessages {

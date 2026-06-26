@@ -7,6 +7,13 @@ semantic versioning.
 ## [Unreleased]
 
 ### Added
+- **Two-factor authentication (TOTP)** — RFC 6238 time-based one-time passwords
+  implemented from Node `crypto` (verified against the official RFC 4226/6238 test
+  vectors), with: enrollment via QR code / manual key, 10 single-use backup codes,
+  a login challenge flow (`/auth/2fa/verify-login`), and enable/disable/status
+  endpoints (`/auth/2fa/setup|enable|disable|status`). TOTP secrets are encrypted
+  at rest with AES-256-GCM; backup codes are stored as bcrypt hashes. Frontend adds
+  a Security settings page (QR + backup codes) and a 2FA step in the login flow.
 - **Data hardening** — `Message.version` (optimistic locking), `Message.deletedAt`
   (soft delete) and `Message.expiresAt` (disappearing messages); new indexes for
   hot read paths.

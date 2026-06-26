@@ -7,10 +7,13 @@ import type {
   Draft,
   Group,
   LinkPreview,
+  LoginResult,
   Message,
   PaginatedMessages,
   PollResult,
   ScheduledMessage,
+  TwoFactorSetup,
+  TwoFactorStatus,
   User,
   UserSettings,
 } from './types';
@@ -21,7 +24,9 @@ export const authService = {
   register: (data: { email: string; username: string; displayName: string; password: string }) =>
     unwrap<{ message: string; userId: string; email: string }>(api.post('/auth/register', data)),
   login: (data: { identifier: string; password: string }) =>
-    unwrap<AuthResponse>(api.post('/auth/login', data)),
+    unwrap<LoginResult>(api.post('/auth/login', data)),
+  verifyTwoFactorLogin: (data: { challengeToken: string; code: string }) =>
+    unwrap<AuthResponse>(api.post('/auth/2fa/verify-login', data)),
   verifyEmail: (data: { email: string; code: string }) =>
     unwrap<AuthResponse>(api.post('/auth/verify-email', data)),
   resendOtp: (email: string) => unwrap(api.post('/auth/resend-otp', { email })),
@@ -30,6 +35,16 @@ export const authService = {
     unwrap(api.post('/auth/reset-password', data)),
   logout: () => unwrap(api.post('/auth/logout')),
   sessions: () => unwrap(api.get('/auth/sessions')),
+};
+
+// ---- Two-factor authentication ---------------------------------------------
+
+export const twoFactorService = {
+  status: () => unwrap<TwoFactorStatus>(api.get('/auth/2fa/status')),
+  setup: () => unwrap<TwoFactorSetup>(api.post('/auth/2fa/setup')),
+  enable: (code: string) =>
+    unwrap<{ backupCodes: string[] }>(api.post('/auth/2fa/enable', { code })),
+  disable: (code: string) => unwrap<{ disabled: true }>(api.post('/auth/2fa/disable', { code })),
 };
 
 // ---- Users / profile --------------------------------------------------------
@@ -63,8 +78,10 @@ export const conversationService = {
   get: (id: string) => unwrap<Conversation>(api.get(`/conversations/${id}`)),
   createDirect: (participantId: string) =>
     unwrap<Conversation>(api.post('/conversations/direct', { participantId })),
-  updateState: (id: string, data: Partial<{ isPinned: boolean; isArchived: boolean; isMuted: boolean }>) =>
-    unwrap<Conversation>(api.patch(`/conversations/${id}/state`, data)),
+  updateState: (
+    id: string,
+    data: Partial<{ isPinned: boolean; isArchived: boolean; isMuted: boolean }>,
+  ) => unwrap<Conversation>(api.patch(`/conversations/${id}/state`, data)),
   markRead: (id: string) => unwrap(api.post(`/conversations/${id}/read`)),
 };
 
@@ -86,7 +103,8 @@ export const messageService = {
   forward: (id: string, conversationIds: string[]) =>
     unwrap<Message[]>(api.post(`/messages/${id}/forward`, { conversationIds })),
   react: (id: string, emoji: string) => unwrap(api.post(`/messages/${id}/react`, { emoji })),
-  star: (id: string) => unwrap<{ messageId: string; starred: boolean }>(api.post(`/messages/${id}/star`)),
+  star: (id: string) =>
+    unwrap<{ messageId: string; starred: boolean }>(api.post(`/messages/${id}/star`)),
   starred: () => unwrap(api.get('/messages/starred')),
   pin: (id: string) =>
     unwrap<{ messageId: string; pinned: boolean }>(api.post(`/messages/${id}/pin`)),
@@ -105,8 +123,7 @@ export const draftService = {
     unwrap<Draft | null>(api.get(`/conversations/${conversationId}/draft`)),
   save: (conversationId: string, content: string) =>
     unwrap<Draft>(api.put(`/conversations/${conversationId}/draft`, { content })),
-  remove: (conversationId: string) =>
-    unwrap(api.delete(`/conversations/${conversationId}/draft`)),
+  remove: (conversationId: string) => unwrap(api.delete(`/conversations/${conversationId}/draft`)),
 };
 
 // ---- Polls ------------------------------------------------------------------
@@ -114,7 +131,12 @@ export const draftService = {
 export const pollService = {
   create: (
     conversationId: string,
-    data: { question: string; options: string[]; allowMultiple?: boolean; closesInSeconds?: number },
+    data: {
+      question: string;
+      options: string[];
+      allowMultiple?: boolean;
+      closesInSeconds?: number;
+    },
   ) => unwrap<PollResult>(api.post(`/conversations/${conversationId}/polls`, data)),
   results: (pollId: string) => unwrap<PollResult>(api.get(`/polls/${pollId}`)),
   vote: (pollId: string, optionIds: string[]) =>
@@ -143,7 +165,8 @@ export const groupService = {
   create: (data: { name: string; description?: string; avatarUrl?: string; memberIds: string[] }) =>
     unwrap<Group>(api.post('/groups', data)),
   get: (id: string) => unwrap<Group>(api.get(`/groups/${id}`)),
-  update: (id: string, data: Record<string, unknown>) => unwrap<Group>(api.patch(`/groups/${id}`, data)),
+  update: (id: string, data: Record<string, unknown>) =>
+    unwrap<Group>(api.patch(`/groups/${id}`, data)),
   addMembers: (id: string, memberIds: string[]) =>
     unwrap<Group>(api.post(`/groups/${id}/members`, { memberIds })),
   removeMember: (id: string, memberId: string) =>

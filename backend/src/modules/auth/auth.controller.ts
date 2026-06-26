@@ -19,6 +19,7 @@ import { Public } from '@/common/decorators/public.decorator';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
 import { AuthService } from './auth.service';
 import { TokensService } from './tokens.service';
+import { TwoFactorService } from './two-factor/two-factor.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { GoogleAuthGuard } from './guards/google-auth.guard';
 import {
@@ -28,7 +29,9 @@ import {
   RegisterDto,
   ResendOtpDto,
   ResetPasswordDto,
+  TwoFactorCodeDto,
   VerifyOtpDto,
+  VerifyTwoFactorLoginDto,
 } from './dto';
 
 @ApiTags('auth')
@@ -37,6 +40,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly tokens: TokensService,
+    private readonly twoFactor: TwoFactorService,
     private readonly config: ConfigService,
   ) {}
 
@@ -74,8 +78,59 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const result = await this.authService.login(dto, this.meta(req));
+    // A 2FA-protected account returns a challenge instead of tokens.
+    if ('requiresTwoFactor' in result) return result;
     this.setRefreshCookie(res, result.refreshToken);
     return result;
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @HttpCode(HttpStatus.OK)
+  @Post('2fa/verify-login')
+  async verifyTwoFactorLogin(
+    @Body() dto: VerifyTwoFactorLoginDto,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.authService.completeTwoFactorLogin(
+      dto.challengeToken,
+      dto.code,
+      this.meta(req),
+    );
+    this.setRefreshCookie(res, result.refreshToken);
+    return result;
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Get('2fa/status')
+  twoFactorStatus(@CurrentUser('id') userId: string) {
+    return this.twoFactor.status(userId);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  @Post('2fa/setup')
+  twoFactorSetup(@CurrentUser('id') userId: string, @CurrentUser('email') email: string) {
+    return this.twoFactor.setup(userId, email);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  @Post('2fa/enable')
+  twoFactorEnable(@CurrentUser('id') userId: string, @Body() dto: TwoFactorCodeDto) {
+    return this.twoFactor.enable(userId, dto.code);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  @Post('2fa/disable')
+  twoFactorDisable(@CurrentUser('id') userId: string, @Body() dto: TwoFactorCodeDto) {
+    return this.twoFactor.disable(userId, dto.code);
   }
 
   @Public()

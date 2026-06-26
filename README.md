@@ -16,7 +16,7 @@ Inspired by the WhatsApp Web experience, built as an original project with a cle
 
 ## ✨ Features
 
-- **Auth** — email/password, email OTP verification, Google OAuth, JWT access + rotating refresh tokens, multi-device session management, forgot/reset password.
+- **Auth** — email/password, email OTP verification, Google OAuth, **two-factor authentication (TOTP + backup codes)**, JWT access + rotating refresh tokens, multi-device session management, forgot/reset password.
 - **Messaging** — real-time one-to-one & group chat, replies, forwarding, edit
   (with edit history + optimistic locking), delete-for-me / delete-for-everyone,
   reactions, starred & **pinned**, **mentions** (`@username`), **polls**,

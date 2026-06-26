@@ -8,6 +8,7 @@ import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '@/common/prisma/prisma.service';
 import { MailService } from '@/common/mail/mail.service';
 import { TokensService } from './tokens.service';
+import { TwoFactorService } from './two-factor/two-factor.service';
 import { ForgotPasswordDto, LoginDto, RegisterDto, ResetPasswordDto, VerifyOtpDto } from './dto';
 
 type RequestMeta = { userAgent?: string; ipAddress?: string };
@@ -23,6 +24,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly tokens: TokensService,
     private readonly mail: MailService,
+    private readonly twoFactor: TwoFactorService,
   ) {}
 
   // ---- Registration --------------------------------------------------------
@@ -74,6 +76,33 @@ export class AuthService {
     if (!user.emailVerified) {
       throw new UnauthorizedException('Email not verified. Please verify your account first.');
     }
+
+    // When 2FA is active, defer token issuance behind a short-lived challenge.
+    if (user.twoFactorEnabled) {
+      return {
+        requiresTwoFactor: true as const,
+        challengeToken: await this.twoFactor.issueChallenge(user.id),
+      };
+    }
+
+    const tokens = await this.tokens.issueTokens(
+      { sub: user.id, email: user.email, username: user.username },
+      meta,
+    );
+    return { ...tokens, user: this.sanitize(user) };
+  }
+
+  /** Completes a login that was deferred by a two-factor challenge. */
+  async completeTwoFactorLogin(challengeToken: string, code: string, meta: RequestMeta) {
+    const userId = await this.twoFactor.resolveChallenge(challengeToken);
+    const verified = await this.twoFactor.verifyCode(userId, code);
+    if (!verified) throw new UnauthorizedException('Invalid verification code');
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { profile: true },
+    });
+    if (!user) throw new UnauthorizedException('Invalid credentials');
 
     const tokens = await this.tokens.issueTokens(
       { sub: user.id, email: user.email, username: user.username },
@@ -236,7 +265,7 @@ export class AuthService {
   }
 
   private sanitize(user: any) {
-    const { passwordHash, googleId, ...rest } = user;
+    const { passwordHash, googleId, twoFactorSecret, twoFactorPendingSecret, ...rest } = user;
     return rest;
   }
 }

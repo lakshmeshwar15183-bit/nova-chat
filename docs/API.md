@@ -30,7 +30,20 @@ Authenticated endpoints require `Authorization: Bearer <accessToken>`.
 | POST   | `/auth/logout`          | —                                      | 🔒                             |
 | GET    | `/auth/sessions`        | —                                      | 🔒 list active sessions        |
 | DELETE | `/auth/sessions/:id`    | —                                      | 🔒 revoke a session            |
+| POST   | `/auth/2fa/verify-login`| challengeToken, code                   | Completes a 2FA-gated login    |
+| GET    | `/auth/2fa/status`      | —                                      | 🔒 `{ enabled, remainingBackupCodes }` |
+| POST   | `/auth/2fa/setup`       | —                                      | 🔒 returns `{ secret, otpauthUrl }` |
+| POST   | `/auth/2fa/enable`      | code                                   | 🔒 returns one-time `backupCodes[]` |
+| POST   | `/auth/2fa/disable`     | code                                   | 🔒 TOTP or backup code         |
 | GET    | `/auth/google`          | —                                      | OAuth redirect                 |
+
+### Two-factor login flow
+
+If an account has 2FA enabled, `POST /auth/login` returns
+`{ requiresTwoFactor: true, challengeToken }` instead of tokens. The client then
+calls `POST /auth/2fa/verify-login` with the `challengeToken` and a TOTP or backup
+code to receive the normal token pair. TOTP secrets are AES-256-GCM encrypted at
+rest; backup codes are bcrypt-hashed and single-use.
 
 ## Users — `/users`
 

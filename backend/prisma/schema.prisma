@@ -123,6 +123,9 @@ model User {
   passwordHash      String?
   googleId          String?    @unique
   emailVerified     Boolean    @default(false)
+  twoFactorEnabled  Boolean    @default(false)
+  twoFactorSecret       String? // AES-256-GCM encrypted active TOTP secret
+  twoFactorPendingSecret String? // encrypted secret awaiting confirmation
   status            UserStatus @default(OFFLINE)
   lastSeenAt        DateTime?
   isActive          Boolean    @default(true)
@@ -158,6 +161,7 @@ model User {
   scheduledMessages ScheduledMessage[]
   pollVotes         PollVote[]
   mentions          Mention[]  @relation("MentionedUser")
+  backupCodes       TwoFactorBackupCode[]
 
   @@index([status])
   @@index([lastSeenAt])
@@ -651,4 +655,21 @@ model AuditLog {
   @@index([userId, createdAt])
   @@index([action])
   @@index([resource, resourceId])
+}
+
+
+// ----------------------------------------------------------------------------
+// Two-factor authentication backup codes
+// ----------------------------------------------------------------------------
+
+model TwoFactorBackupCode {
+  id        String    @id @default(uuid())
+  userId    String
+  codeHash  String
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }

@@ -9,6 +9,8 @@ import { AuthShell } from '@/components/auth/auth-shell';
 import { Spinner } from '@/components/ui/spinner';
 import { authService } from '@/lib/services';
 import { apiErrorMessage, API_URL, tokenStore } from '@/lib/api';
+import { isTwoFactorChallenge } from '@/lib/types';
+import type { AuthResponse } from '@/lib/types';
 import { useAuthStore } from '@/store/auth-store';
 
 interface LoginForm {
@@ -20,22 +22,92 @@ export default function LoginPage() {
   const router = useRouter();
   const setUser = useAuthStore((s) => s.setUser);
   const [loading, setLoading] = useState(false);
-  const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>();
+  const [challengeToken, setChallengeToken] = useState<string | null>(null);
+  const [code, setCode] = useState('');
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginForm>();
+
+  const completeLogin = (res: AuthResponse) => {
+    tokenStore.set(res.accessToken);
+    setUser(res.user);
+    toast.success(`Welcome back, ${res.user.profile.displayName}!`);
+    router.replace('/chat');
+  };
 
   const onSubmit = async (data: LoginForm) => {
     setLoading(true);
     try {
       const res = await authService.login(data);
-      tokenStore.set(res.accessToken);
-      setUser(res.user);
-      toast.success(`Welcome back, ${res.user.profile.displayName}!`);
-      router.replace('/chat');
+      if (isTwoFactorChallenge(res)) {
+        setChallengeToken(res.challengeToken);
+      } else {
+        completeLogin(res);
+      }
     } catch (err) {
       toast.error(apiErrorMessage(err));
     } finally {
       setLoading(false);
     }
   };
+
+  const onVerifyTwoFactor = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!challengeToken) return;
+    setLoading(true);
+    try {
+      const res = await authService.verifyTwoFactorLogin({
+        challengeToken,
+        code: code.trim(),
+      });
+      completeLogin(res);
+    } catch (err) {
+      toast.error(apiErrorMessage(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (challengeToken) {
+    return (
+      <AuthShell
+        title="Two-factor authentication"
+        subtitle="Enter the 6-digit code from your authenticator app, or a backup code"
+        footer={
+          <button
+            onClick={() => {
+              setChallengeToken(null);
+              setCode('');
+            }}
+            className="font-medium text-nova-600 hover:underline"
+          >
+            Back to login
+          </button>
+        }
+      >
+        <form onSubmit={onVerifyTwoFactor} className="space-y-4">
+          <input
+            autoFocus
+            inputMode="numeric"
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            className="input text-center text-xl tracking-[0.4em]"
+            placeholder="123456"
+            aria-label="Two-factor code"
+          />
+          <button
+            type="submit"
+            className="btn-primary w-full py-3"
+            disabled={loading || code.trim().length < 6}
+          >
+            {loading ? <Spinner className="h-4 w-4" /> : 'Verify'}
+          </button>
+        </form>
+      </AuthShell>
+    );
+  }
 
   return (
     <AuthShell
@@ -67,7 +139,9 @@ export default function LoginPage() {
 
         <div>
           <div className="mb-1.5 flex items-center justify-between">
-            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Password</label>
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              Password
+            </label>
             <Link href="/forgot-password" className="text-xs text-nova-600 hover:underline">
               Forgot?
             </Link>
@@ -78,7 +152,9 @@ export default function LoginPage() {
             placeholder="••••••••"
             {...register('password', { required: 'Required' })}
           />
-          {errors.password && <p className="mt-1 text-xs text-red-500">{errors.password.message}</p>}
+          {errors.password && (
+            <p className="mt-1 text-xs text-red-500">{errors.password.message}</p>
+          )}
         </div>
 
         <button type="submit" className="btn-primary w-full py-3" disabled={loading}>

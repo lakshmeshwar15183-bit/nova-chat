@@ -94,3 +94,24 @@ export class ResetPasswordDto {
   })
   newPassword: string;
 }
+
+export class TwoFactorCodeDto {
+  @ApiProperty({ example: '123456', description: 'TOTP code or a backup code' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(20)
+  code: string;
+}
+
+export class VerifyTwoFactorLoginDto {
+  @ApiProperty({ description: 'Challenge token returned by /auth/login' })
+  @IsString()
+  @IsNotEmpty()
+  challengeToken: string;
+
+  @ApiProperty({ example: '123456', description: 'TOTP code or a backup code' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(20)
+  code: string;
+}

@@ -46,6 +46,13 @@ export default () => ({
     serviceKey: process.env.SUPABASE_SERVICE_KEY || '',
     bucket: process.env.SUPABASE_BUCKET || 'novachat-media',
   },
+  security: {
+    twoFactorKey:
+      process.env.TWO_FACTOR_ENCRYPTION_KEY ||
+      process.env.JWT_ACCESS_SECRET ||
+      'dev-two-factor-key-change-me',
+    twoFactorIssuer: process.env.TWO_FACTOR_ISSUER || 'NovaChat',
+  },
   throttle: {
     ttl: parseInt(process.env.THROTTLE_TTL || '60', 10),
     limit: parseInt(process.env.THROTTLE_LIMIT || '120', 10),
