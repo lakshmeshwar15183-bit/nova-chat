@@ -1,0 +1,506 @@
+// NovaChat — Prisma schema
+// PostgreSQL data model for a real-time messaging platform.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ----------------------------------------------------------------------------
+// Enums
+// ----------------------------------------------------------------------------
+
+enum UserStatus {
+  ONLINE
+  OFFLINE
+  AWAY
+}
+
+enum PrivacyLevel {
+  EVERYONE
+  CONTACTS
+  NOBODY
+}
+
+enum ContactStatus {
+  PENDING
+  ACCEPTED
+  BLOCKED
+}
+
+enum ConversationType {
+  DIRECT
+  GROUP
+}
+
+enum GroupRole {
+  MEMBER
+  ADMIN
+  OWNER
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  VIDEO
+  AUDIO
+  VOICE
+  DOCUMENT
+  SYSTEM
+}
+
+enum MessageStatus {
+  SENT
+  DELIVERED
+  READ
+}
+
+enum AttachmentType {
+  IMAGE
+  VIDEO
+  AUDIO
+  VOICE
+  PDF
+  ZIP
+  DOCUMENT
+}
+
+enum NotificationType {
+  MESSAGE
+  MENTION
+  CONTACT_REQUEST
+  GROUP_INVITE
+  CALL
+  SYSTEM
+}
+
+enum CallType {
+  VOICE
+  VIDEO
+}
+
+enum CallStatus {
+  RINGING
+  ONGOING
+  ENDED
+  MISSED
+  DECLINED
+}
+
+enum DevicePlatform {
+  WEB
+  IOS
+  ANDROID
+  DESKTOP
+}
+
+enum ThemePreference {
+  LIGHT
+  DARK
+  SYSTEM
+}
+
+// ----------------------------------------------------------------------------
+// Core identity
+// ----------------------------------------------------------------------------
+
+model User {
+  id                String     @id @default(uuid())
+  email             String     @unique
+  username          String     @unique
+  passwordHash      String?
+  googleId          String?    @unique
+  emailVerified     Boolean    @default(false)
+  status            UserStatus @default(OFFLINE)
+  lastSeenAt        DateTime?
+  isActive          Boolean    @default(true)
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  profile           Profile?
+  settings          UserSettings?
+
+  sessions          Session[]
+  devices           Device[]
+  otpTokens         OtpToken[]
+
+  contactsInitiated Contact[]  @relation("ContactOwner")
+  contactsReceived  Contact[]  @relation("ContactTarget")
+
+  conversations     ConversationParticipant[]
+  ownedGroups       Group[]    @relation("GroupOwner")
+  groupMemberships  GroupMember[]
+
+  messages          Message[]  @relation("MessageSender")
+  reactions         Reaction[]
+  receipts          MessageReceipt[]
+  starredMessages   StarredMessage[]
+  pinnedMessages    PinnedMessage[]
+
+  notifications     Notification[]
+  callsInitiated    Call[]     @relation("CallInitiator")
+  callParticipants  CallParticipant[]
+
+  @@index([status])
+  @@index([lastSeenAt])
+}
+
+model Profile {
+  id           String       @id @default(uuid())
+  userId       String       @unique
+  displayName  String
+  bio          String?      @db.VarChar(280)
+  avatarUrl    String?
+  phoneNumber  String?
+  lastSeenPrivacy   PrivacyLevel @default(EVERYONE)
+  profilePhotoPrivacy PrivacyLevel @default(EVERYONE)
+  bioPrivacy        PrivacyLevel @default(EVERYONE)
+  readReceiptsEnabled Boolean    @default(true)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UserSettings {
+  id                   String          @id @default(uuid())
+  userId               String          @unique
+  theme                ThemePreference @default(SYSTEM)
+  language             String          @default("en")
+  notificationsEnabled Boolean         @default(true)
+  soundEnabled         Boolean         @default(true)
+  desktopNotifications Boolean         @default(true)
+  enterToSend          Boolean         @default(true)
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+
+  user                 User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ----------------------------------------------------------------------------
+// Sessions, devices, auth tokens
+// ----------------------------------------------------------------------------
+
+model Session {
+  id               String   @id @default(uuid())
+  userId           String
+  refreshTokenHash String
+  userAgent        String?
+  ipAddress        String?
+  expiresAt        DateTime
+  revokedAt        DateTime?
+  createdAt        DateTime @default(now())
+
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([refreshTokenHash])
+}
+
+model Device {
+  id           String         @id @default(uuid())
+  userId       String
+  platform     DevicePlatform @default(WEB)
+  pushToken    String?
+  name         String?
+  lastActiveAt DateTime       @default(now())
+  createdAt    DateTime       @default(now())
+
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, pushToken])
+  @@index([userId])
+}
+
+model OtpToken {
+  id        String   @id @default(uuid())
+  userId    String
+  codeHash  String
+  purpose   String // EMAIL_VERIFICATION | PASSWORD_RESET | LOGIN
+  expiresAt DateTime
+  consumed  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose])
+}
+
+// ----------------------------------------------------------------------------
+// Contacts
+// ----------------------------------------------------------------------------
+
+model Contact {
+  id        String        @id @default(uuid())
+  ownerId   String
+  targetId  String
+  status    ContactStatus @default(ACCEPTED)
+  alias     String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  owner     User          @relation("ContactOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  target    User          @relation("ContactTarget", fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@unique([ownerId, targetId])
+  @@index([ownerId, status])
+}
+
+// ----------------------------------------------------------------------------
+// Conversations & groups
+// ----------------------------------------------------------------------------
+
+model Conversation {
+  id            String           @id @default(uuid())
+  type          ConversationType @default(DIRECT)
+  lastMessageAt DateTime?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  group         Group?
+  participants  ConversationParticipant[]
+  messages      Message[]
+  calls         Call[]
+
+  @@index([lastMessageAt])
+}
+
+model ConversationParticipant {
+  id             String       @id @default(uuid())
+  conversationId String
+  userId         String
+  isArchived     Boolean      @default(false)
+  isPinned       Boolean      @default(false)
+  isMuted        Boolean      @default(false)
+  mutedUntil     DateTime?
+  lastReadAt     DateTime?
+  joinedAt       DateTime     @default(now())
+
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@index([userId, isArchived])
+  @@index([userId, isPinned])
+}
+
+model Group {
+  id             String        @id @default(uuid())
+  conversationId String        @unique
+  name           String
+  description    String?       @db.VarChar(500)
+  avatarUrl      String?
+  ownerId        String
+  onlyAdminsCanMessage Boolean @default(false)
+  onlyAdminsCanEditInfo Boolean @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  conversation   Conversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  owner          User          @relation("GroupOwner", fields: [ownerId], references: [id])
+  members        GroupMember[]
+  inviteLinks    GroupInviteLink[]
+
+  @@index([ownerId])
+}
+
+model GroupMember {
+  id        String    @id @default(uuid())
+  groupId   String
+  userId    String
+  role      GroupRole @default(MEMBER)
+  joinedAt  DateTime  @default(now())
+
+  group     Group     @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@index([groupId])
+}
+
+model GroupInviteLink {
+  id        String    @id @default(uuid())
+  groupId   String
+  code      String    @unique
+  createdBy String
+  maxUses   Int?
+  uses      Int       @default(0)
+  expiresAt DateTime?
+  revoked   Boolean   @default(false)
+  createdAt DateTime  @default(now())
+
+  group     Group     @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@index([groupId])
+}
+
+// ----------------------------------------------------------------------------
+// Messages
+// ----------------------------------------------------------------------------
+
+model Message {
+  id              String        @id @default(uuid())
+  conversationId  String
+  senderId        String?
+  type            MessageType   @default(TEXT)
+  content         String?       @db.Text
+  status          MessageStatus @default(SENT)
+  replyToId       String?
+  forwardedFromId String?
+  isEdited        Boolean       @default(false)
+  editedAt        DateTime?
+  deletedForEveryone Boolean    @default(false)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  conversation    Conversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender          User?         @relation("MessageSender", fields: [senderId], references: [id], onDelete: SetNull)
+  replyTo         Message?      @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies         Message[]     @relation("MessageReplies")
+
+  attachments     Attachment[]
+  reactions       Reaction[]
+  receipts        MessageReceipt[]
+  deletions       MessageDeletion[]
+  starredBy       StarredMessage[]
+  pinnedIn        PinnedMessage[]
+
+  @@index([conversationId, createdAt])
+  @@index([senderId])
+}
+
+model Attachment {
+  id         String         @id @default(uuid())
+  messageId  String
+  type       AttachmentType
+  url        String
+  fileName   String
+  mimeType   String
+  size       Int
+  width      Int?
+  height     Int?
+  duration   Int? // seconds, for audio/video/voice
+  thumbnailUrl String?
+  createdAt  DateTime       @default(now())
+
+  message    Message        @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+}
+
+model Reaction {
+  id        String   @id @default(uuid())
+  messageId String
+  userId    String
+  emoji     String
+  createdAt DateTime @default(now())
+
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId, emoji])
+  @@index([messageId])
+}
+
+model MessageReceipt {
+  id          String        @id @default(uuid())
+  messageId   String
+  userId      String
+  status      MessageStatus @default(DELIVERED)
+  deliveredAt DateTime?
+  readAt      DateTime?
+
+  message     Message       @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId])
+  @@index([userId])
+}
+
+model MessageDeletion {
+  id        String   @id @default(uuid())
+  messageId String
+  userId    String
+  createdAt DateTime @default(now())
+
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId])
+}
+
+model StarredMessage {
+  id        String   @id @default(uuid())
+  messageId String
+  userId    String
+  createdAt DateTime @default(now())
+
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId])
+  @@index([userId])
+}
+
+model PinnedMessage {
+  id        String   @id @default(uuid())
+  messageId String
+  userId    String
+  createdAt DateTime @default(now())
+
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId])
+}
+
+// ----------------------------------------------------------------------------
+// Notifications & calls
+// ----------------------------------------------------------------------------
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  type      NotificationType
+  title     String
+  body      String?
+  data      Json?
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+}
+
+model Call {
+  id             String       @id @default(uuid())
+  conversationId String
+  initiatorId    String
+  type           CallType
+  status         CallStatus   @default(RINGING)
+  startedAt      DateTime     @default(now())
+  endedAt        DateTime?
+
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  initiator      User         @relation("CallInitiator", fields: [initiatorId], references: [id], onDelete: Cascade)
+  participants   CallParticipant[]
+
+  @@index([conversationId])
+}
+
+model CallParticipant {
+  id       String    @id @default(uuid())
+  callId   String
+  userId   String
+  joinedAt DateTime?
+  leftAt   DateTime?
+
+  call     Call      @relation(fields: [callId], references: [id], onDelete: Cascade)
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([callId, userId])
+}

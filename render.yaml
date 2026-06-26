@@ -1,0 +1,44 @@
+# Render.com blueprint for the NovaChat backend + managed Postgres & Redis.
+# Deploy with: Render Dashboard → New → Blueprint → point at this repo.
+
+services:
+  - type: web
+    name: novachat-backend
+    runtime: docker
+    dockerfilePath: ./docker/Dockerfile.backend
+    dockerContext: ./backend
+    plan: starter
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 4000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: novachat-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: novachat-redis
+          type: redis
+          property: connectionString
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: CORS_ORIGINS
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+
+  - type: redis
+    name: novachat-redis
+    plan: starter
+    ipAllowList: []
+
+databases:
+  - name: novachat-db
+    plan: starter
+    databaseName: novachat
+    user: novachat

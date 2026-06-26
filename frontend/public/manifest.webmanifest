@@ -1,0 +1,10 @@
+{
+  "name": "NovaChat",
+  "short_name": "NovaChat",
+  "description": "Secure real-time messaging platform",
+  "start_url": "/chat",
+  "display": "standalone",
+  "background_color": "#0b141a",
+  "theme_color": "#147356",
+  "icons": []
+}
