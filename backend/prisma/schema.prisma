@@ -51,6 +51,7 @@ enum MessageType {
   VOICE
   DOCUMENT
   SYSTEM
+  POLL
 }
 
 enum MessageStatus {

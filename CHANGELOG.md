@@ -13,8 +13,25 @@ semantic versioning.
 - **Audit logs** — immutable `AuditLog` model, `AuditService`, an automatic
   `AuditInterceptor` that records every successful state-changing request, and a
   `GET /api/audit/me` endpoint for per-user activity transparency.
+- **Pinned messages** — `POST /api/messages/:id/pin` (toggle) and
+  `GET /api/conversations/:id/pinned`.
+- **Message edit history + optimistic locking** — every edit snapshots the previous
+  content (`GET /api/messages/:id/history`) and updates are version-guarded to
+  prevent lost updates.
+- **Mentions** — `@username` parsing on send, persisted `Mention` rows and
+  notifications to mentioned conversation participants.
+- **Drafts** — auto-saved per-conversation drafts
+  (`PUT/GET/DELETE /api/conversations/:id/draft`, `GET /api/drafts`).
+- **Scheduled messages** — schedule a message for future delivery
+  (`POST /api/conversations/:id/scheduled-messages`) with a 30s cron dispatcher
+  that sends through the normal realtime pipeline; list and cancel supported.
+- **Polls** — create polls (`POST /api/conversations/:id/polls`), vote
+  (single/multiple), live results with percentages, and close
+  (`/api/polls/:id`, `/vote`, `/close`).
+- **Link previews** — `GET /api/link-preview?url=` fetches Open Graph metadata with
+  Redis caching, byte limits and timeouts.
 - **New schema entities** — `Draft`, `ScheduledMessage`, `Poll` / `PollOption` /
-  `PollVote`, `Mention` and `MessageEditHistory`.
+  `PollVote`, `Mention` and `MessageEditHistory`; `POLL` message type.
 - **Security hardening** — response `compression`, an origin-based `CsrfGuard`
   applied globally, and an input-sanitization (`@Sanitize()`) transform for stored
   message content (defence-in-depth against stored XSS).

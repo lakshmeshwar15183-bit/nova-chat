@@ -24,6 +24,10 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { SettingsModule } from './modules/settings/settings.module';
 import { ChatModule } from './modules/chat/chat.module';
 import { AuditModule } from './modules/audit/audit.module';
+import { DraftsModule } from './modules/drafts/drafts.module';
+import { ScheduledMessagesModule } from './modules/scheduled-messages/scheduled-messages.module';
+import { PollsModule } from './modules/polls/polls.module';
+import { LinkPreviewModule } from './modules/link-preview/link-preview.module';
 
 @Module({
   imports: [
@@ -78,6 +82,10 @@ import { AuditModule } from './modules/audit/audit.module';
     SettingsModule,
     ChatModule,
     AuditModule,
+    DraftsModule,
+    ScheduledMessagesModule,
+    PollsModule,
+    LinkPreviewModule,
   ],
   providers: [
     {

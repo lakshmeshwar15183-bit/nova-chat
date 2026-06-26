@@ -48,10 +48,7 @@ export class AuditService {
     }
   }
 
-  async listForUser(
-    userId: string,
-    pagination: PaginationDto,
-  ): Promise<PaginatedResult<unknown>> {
+  async listForUser(userId: string, pagination: PaginationDto): Promise<PaginatedResult<unknown>> {
     const items = await this.prisma.auditLog.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },

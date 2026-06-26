@@ -74,6 +74,11 @@ export class EditMessageDto {
   @MaxLength(10000)
   @Sanitize()
   content: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  version?: number;
 }
 
 export class ForwardMessageDto {

@@ -1,8 +1,14 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { MessageType } from '@prisma/client';
 import { PrismaService } from '@/common/prisma/prisma.service';
 import { ConversationsService } from '../conversations/conversations.service';
 import { RealtimeService } from '../realtime/realtime.service';
+import { MentionsService } from './mentions.service';
 import {
   EditMessageDto,
   ForwardMessageDto,
@@ -39,6 +45,7 @@ export class MessagesService {
     private readonly prisma: PrismaService,
     private readonly conversations: ConversationsService,
     private readonly realtime: RealtimeService,
+    private readonly mentions: MentionsService,
   ) {}
 
   async list(conversationId: string, userId: string, dto: ListMessagesDto) {
@@ -101,21 +108,86 @@ export class MessagesService {
 
     const payload = this.shape(message, new Set());
     this.realtime.emitToConversation(conversationId, 'message_received', payload);
+    await this.mentions.process({
+      messageId: message.id,
+      conversationId,
+      senderId: userId,
+      content: dto.content,
+    });
     return payload;
   }
 
-  async edit(messageId: string, userId: string, dto: EditMessageDto) {
+  async edit(messageId: string, userId: string, dto: EditMessageDto, expectedVersion?: number) {
     const message = await this.getOwnedMessage(messageId, userId);
     if (message.deletedForEveryone) throw new ForbiddenException('Cannot edit a deleted message');
 
-    const updated = await this.prisma.message.update({
-      where: { id: messageId },
-      data: { content: dto.content, isEdited: true, editedAt: new Date() },
-      include: messageInclude,
+    // Optimistic locking: if a version is supplied it must match the current row.
+    if (expectedVersion !== undefined && expectedVersion !== message.version) {
+      throw new ConflictException('Message was modified by another action; please retry');
+    }
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      // Preserve the previous content for the edit-history trail.
+      await tx.messageEditHistory.create({
+        data: { messageId, previousContent: message.content },
+      });
+      // Conditional update enforces the optimistic lock atomically.
+      const result = await tx.message.updateMany({
+        where: { id: messageId, version: message.version },
+        data: {
+          content: dto.content,
+          isEdited: true,
+          editedAt: new Date(),
+          version: { increment: 1 },
+        },
+      });
+      if (result.count === 0) {
+        throw new ConflictException('Message was modified concurrently; please retry');
+      }
+      return tx.message.findUniqueOrThrow({ where: { id: messageId }, include: messageInclude });
     });
+
     const payload = this.shape(updated, new Set());
     this.realtime.emitToConversation(message.conversationId, 'message_updated', payload);
     return payload;
+  }
+
+  async getEditHistory(messageId: string, userId: string) {
+    const message = await this.prisma.message.findUnique({ where: { id: messageId } });
+    if (!message) throw new NotFoundException('Message not found');
+    await this.conversations.assertMember(message.conversationId, userId);
+    return this.prisma.messageEditHistory.findMany({
+      where: { messageId },
+      orderBy: { editedAt: 'desc' },
+    });
+  }
+
+  async togglePin(messageId: string, userId: string) {
+    const message = await this.prisma.message.findUnique({ where: { id: messageId } });
+    if (!message) throw new NotFoundException('Message not found');
+    await this.conversations.assertMember(message.conversationId, userId);
+
+    const existing = await this.prisma.pinnedMessage.findUnique({
+      where: { messageId_userId: { messageId, userId } },
+    });
+    if (existing) {
+      await this.prisma.pinnedMessage.delete({ where: { id: existing.id } });
+      this.realtime.emitToConversation(message.conversationId, 'message_unpinned', { messageId });
+      return { messageId, pinned: false };
+    }
+    await this.prisma.pinnedMessage.create({ data: { messageId, userId } });
+    this.realtime.emitToConversation(message.conversationId, 'message_pinned', { messageId });
+    return { messageId, pinned: true };
+  }
+
+  async listPinned(conversationId: string, userId: string) {
+    await this.conversations.assertMember(conversationId, userId);
+    const pinned = await this.prisma.pinnedMessage.findMany({
+      where: { userId, message: { conversationId } },
+      include: { message: { include: messageInclude } },
+      orderBy: { createdAt: 'desc' },
+    });
+    return pinned.map((p) => this.shape(p.message, new Set()));
   }
 
   async deleteForMe(messageId: string, userId: string) {
@@ -288,6 +360,7 @@ export class MessagesService {
       reactions: message.reactions ?? [],
       receipts: message.receipts ?? [],
       status: message.status,
+      version: message.version,
       starred: starredSet.has(message.id),
       createdAt: message.createdAt,
     };

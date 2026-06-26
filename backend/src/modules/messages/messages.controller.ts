@@ -51,9 +51,24 @@ export class MessagesController {
     return this.messagesService.listStarred(userId);
   }
 
+  @Get('conversations/:conversationId/pinned')
+  pinned(@Param('conversationId') conversationId: string, @CurrentUser('id') userId: string) {
+    return this.messagesService.listPinned(conversationId, userId);
+  }
+
   @Patch('messages/:id')
   edit(@Param('id') id: string, @CurrentUser('id') userId: string, @Body() dto: EditMessageDto) {
-    return this.messagesService.edit(id, userId, dto);
+    return this.messagesService.edit(id, userId, dto, dto.version);
+  }
+
+  @Get('messages/:id/history')
+  history(@Param('id') id: string, @CurrentUser('id') userId: string) {
+    return this.messagesService.getEditHistory(id, userId);
+  }
+
+  @Post('messages/:id/pin')
+  pin(@Param('id') id: string, @CurrentUser('id') userId: string) {
+    return this.messagesService.togglePin(id, userId);
   }
 
   @Delete('messages/:id/me')
