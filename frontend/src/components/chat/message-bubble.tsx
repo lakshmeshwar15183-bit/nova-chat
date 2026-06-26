@@ -60,7 +60,11 @@ export function MessageBubble({ message, isOwn, showSender, onReply, onEdit, onF
     setMenuOpen(false);
     try {
       const res = await messageService.star(message.id);
-      updateMessage({ id: message.id, conversationId: message.conversationId, starred: res.starred });
+      updateMessage({
+        id: message.id,
+        conversationId: message.conversationId,
+        starred: res.starred,
+      });
       toast.success(res.starred ? 'Starred' : 'Unstarred');
     } catch (err) {
       toast.error(apiErrorMessage(err));
@@ -155,10 +159,7 @@ export function MessageBubble({ message, isOwn, showSender, onReply, onEdit, onF
 
         {grouped.length > 0 && (
           <div
-            className={cn(
-              '-mt-1 flex flex-wrap gap-1',
-              isOwn ? 'justify-end' : 'justify-start',
-            )}
+            className={cn('-mt-1 flex flex-wrap gap-1', isOwn ? 'justify-end' : 'justify-start')}
           >
             {grouped.map((r) => (
               <button
@@ -180,13 +181,22 @@ export function MessageBubble({ message, isOwn, showSender, onReply, onEdit, onF
               isOwn ? '-left-16' : '-right-16',
             )}
           >
-            <button onClick={() => setPickerOpen((v) => !v)} className="rounded-full bg-white p-1.5 shadow dark:bg-slate-700">
+            <button
+              onClick={() => setPickerOpen((v) => !v)}
+              className="rounded-full bg-white p-1.5 shadow dark:bg-slate-700"
+            >
               <Smile className="h-4 w-4 text-slate-500 dark:text-slate-300" />
             </button>
-            <button onClick={() => onReply(message)} className="rounded-full bg-white p-1.5 shadow dark:bg-slate-700">
+            <button
+              onClick={() => onReply(message)}
+              className="rounded-full bg-white p-1.5 shadow dark:bg-slate-700"
+            >
               <CornerUpLeft className="h-4 w-4 text-slate-500 dark:text-slate-300" />
             </button>
-            <button onClick={() => setMenuOpen((v) => !v)} className="rounded-full bg-white p-1.5 shadow dark:bg-slate-700">
+            <button
+              onClick={() => setMenuOpen((v) => !v)}
+              className="rounded-full bg-white p-1.5 shadow dark:bg-slate-700"
+            >
               <MoreVertical className="h-4 w-4 text-slate-500 dark:text-slate-300" />
             </button>
           </div>
@@ -200,7 +210,11 @@ export function MessageBubble({ message, isOwn, showSender, onReply, onEdit, onF
             )}
           >
             {QUICK_REACTIONS.map((e) => (
-              <button key={e} onClick={() => react(e)} className="text-lg transition hover:scale-125">
+              <button
+                key={e}
+                onClick={() => react(e)}
+                className="text-lg transition hover:scale-125"
+              >
                 {e}
               </button>
             ))}
@@ -214,16 +228,42 @@ export function MessageBubble({ message, isOwn, showSender, onReply, onEdit, onF
               isOwn ? 'right-0' : 'left-0',
             )}
           >
-            <MenuItem icon={CornerUpLeft} label="Reply" onClick={() => { setMenuOpen(false); onReply(message); }} />
-            <MenuItem icon={Forward} label="Forward" onClick={() => { setMenuOpen(false); onForward(message); }} />
+            <MenuItem
+              icon={CornerUpLeft}
+              label="Reply"
+              onClick={() => {
+                setMenuOpen(false);
+                onReply(message);
+              }}
+            />
+            <MenuItem
+              icon={Forward}
+              label="Forward"
+              onClick={() => {
+                setMenuOpen(false);
+                onForward(message);
+              }}
+            />
             <MenuItem icon={Star} label={message.starred ? 'Unstar' : 'Star'} onClick={star} />
             <MenuItem icon={Pin} label={message.pinned ? 'Unpin' : 'Pin'} onClick={pin} />
             {isOwn && message.type === 'TEXT' && (
-              <MenuItem icon={Pencil} label="Edit" onClick={() => { setMenuOpen(false); onEdit(message); }} />
+              <MenuItem
+                icon={Pencil}
+                label="Edit"
+                onClick={() => {
+                  setMenuOpen(false);
+                  onEdit(message);
+                }}
+              />
             )}
             <MenuItem icon={Trash2} label="Delete for me" danger onClick={() => remove(false)} />
             {isOwn && (
-              <MenuItem icon={Trash2} label="Delete for everyone" danger onClick={() => remove(true)} />
+              <MenuItem
+                icon={Trash2}
+                label="Delete for everyone"
+                danger
+                onClick={() => remove(true)}
+              />
             )}
           </div>
         )}

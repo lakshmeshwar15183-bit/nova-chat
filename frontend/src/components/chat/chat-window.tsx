@@ -92,7 +92,12 @@ export function ChatWindow({ conversationId }: { conversationId: string }) {
               m.senderId !== userId &&
               messages[i - 1]?.senderId !== m.senderId;
             return m.type === 'POLL' ? (
-              <PollBubble key={m.id} message={m} isOwn={m.senderId === userId} showSender={showSender} />
+              <PollBubble
+                key={m.id}
+                message={m}
+                isOwn={m.senderId === userId}
+                showSender={showSender}
+              />
             ) : (
               <MessageBubble
                 key={m.id}

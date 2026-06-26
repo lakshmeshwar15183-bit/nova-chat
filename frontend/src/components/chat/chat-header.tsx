@@ -58,10 +58,18 @@ export function ChatHeader({ conversation }: { conversation: Conversation }) {
       </button>
 
       <div className="flex items-center gap-1">
-        <button onClick={() => startCall('VOICE')} className="btn-ghost h-9 w-9 p-0" title="Voice call">
+        <button
+          onClick={() => startCall('VOICE')}
+          className="btn-ghost h-9 w-9 p-0"
+          title="Voice call"
+        >
           <Phone className="h-5 w-5" />
         </button>
-        <button onClick={() => startCall('VIDEO')} className="btn-ghost h-9 w-9 p-0" title="Video call">
+        <button
+          onClick={() => startCall('VIDEO')}
+          className="btn-ghost h-9 w-9 p-0"
+          title="Video call"
+        >
           <Video className="h-5 w-5" />
         </button>
       </div>

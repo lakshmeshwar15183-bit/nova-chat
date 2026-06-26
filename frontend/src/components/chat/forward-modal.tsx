@@ -53,7 +53,11 @@ export function ForwardModal({ message, onClose }: { message: Message; onClose: 
           </button>
         ))}
       </div>
-      <button onClick={forward} className="btn-primary mt-4 w-full py-2.5" disabled={sending || !selected.length}>
+      <button
+        onClick={forward}
+        className="btn-primary mt-4 w-full py-2.5"
+        disabled={sending || !selected.length}
+      >
         {sending ? <Spinner className="h-4 w-4" /> : `Forward (${selected.length})`}
       </button>
     </Modal>

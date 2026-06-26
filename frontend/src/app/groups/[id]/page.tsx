@@ -115,14 +115,19 @@ export default function GroupPage({ params }: { params: Promise<{ id: string }> 
             </div>
           ) : (
             <>
-              <h2 className="mt-4 text-xl font-bold text-slate-900 dark:text-white">{group.name}</h2>
+              <h2 className="mt-4 text-xl font-bold text-slate-900 dark:text-white">
+                {group.name}
+              </h2>
               <p className="mt-1 text-center text-sm text-slate-500">{group.description}</p>
             </>
           )}
         </div>
 
         {isAdmin && (
-          <button onClick={createInvite} className="card flex w-full items-center gap-3 p-4 text-nova-600">
+          <button
+            onClick={createInvite}
+            className="card flex w-full items-center gap-3 p-4 text-nova-600"
+          >
             <Link2 className="h-5 w-5" />
             <span className="font-medium">Create & copy invite link</span>
           </button>
@@ -135,7 +140,11 @@ export default function GroupPage({ params }: { params: Promise<{ id: string }> 
           <div className="space-y-1">
             {group.members?.map((m) => (
               <div key={m.id} className="flex items-center gap-3 py-2">
-                <Avatar src={m.user?.profile?.avatarUrl} name={m.user?.profile?.displayName} size="md" />
+                <Avatar
+                  src={m.user?.profile?.avatarUrl}
+                  name={m.user?.profile?.displayName}
+                  size="md"
+                />
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium text-slate-900 dark:text-white">
                     {m.user?.profile?.displayName}

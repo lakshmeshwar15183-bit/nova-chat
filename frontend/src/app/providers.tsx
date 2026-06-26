@@ -22,8 +22,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         <Toaster
           position="top-center"
           toastOptions={{
-            className:
-              'dark:!bg-slate-800 dark:!text-slate-100 !rounded-xl !text-sm !shadow-lg',
+            className: 'dark:!bg-slate-800 dark:!text-slate-100 !rounded-xl !text-sm !shadow-lg',
           }}
         />
       </ThemeProvider>

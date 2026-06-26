@@ -20,7 +20,11 @@ interface RegisterForm {
 export default function RegisterPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const { register, handleSubmit, formState: { errors } } = useForm<RegisterForm>();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<RegisterForm>();
 
   const onSubmit = async (data: RegisterForm) => {
     setLoading(true);

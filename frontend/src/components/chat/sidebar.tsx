@@ -42,7 +42,11 @@ export function Sidebar() {
         >
           {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
         </button>
-        <button onClick={handleLogout} className="btn-ghost h-11 w-11 p-0 text-red-500" title="Log out">
+        <button
+          onClick={handleLogout}
+          className="btn-ghost h-11 w-11 p-0 text-red-500"
+          title="Log out"
+        >
           <LogOut className="h-5 w-5" />
         </button>
         <Link href="/profile">

@@ -27,11 +27,7 @@ let refreshing: Promise<string | null> | null = null;
 
 async function refreshAccessToken(): Promise<string | null> {
   try {
-    const res = await axios.post(
-      `${API_BASE}/auth/refresh`,
-      {},
-      { withCredentials: true },
-    );
+    const res = await axios.post(`${API_BASE}/auth/refresh`, {}, { withCredentials: true });
     const token = res.data?.data?.accessToken as string | undefined;
     if (token) {
       tokenStore.set(token);

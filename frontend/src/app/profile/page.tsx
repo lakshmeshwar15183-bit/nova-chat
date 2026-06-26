@@ -74,7 +74,11 @@ export default function ProfilePage() {
             <label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
               Display name
             </label>
-            <input value={displayName} onChange={(e) => setDisplayName(e.target.value)} className="input" />
+            <input
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              className="input"
+            />
           </div>
           <div>
             <label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">

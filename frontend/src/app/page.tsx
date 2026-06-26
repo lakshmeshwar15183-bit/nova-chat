@@ -1,20 +1,25 @@
 import Link from 'next/link';
-import {
-  MessagesSquare,
-  ShieldCheck,
-  Zap,
-  Users,
-  Video,
-  Image as ImageIcon,
-} from 'lucide-react';
+import { MessagesSquare, ShieldCheck, Zap, Users, Video, Image as ImageIcon } from 'lucide-react';
 
 const features = [
-  { icon: Zap, title: 'Realtime & fast', desc: 'Instant delivery powered by WebSockets and Redis.' },
-  { icon: ShieldCheck, title: 'Secure by design', desc: 'JWT auth, encrypted passwords and strict validation.' },
+  {
+    icon: Zap,
+    title: 'Realtime & fast',
+    desc: 'Instant delivery powered by WebSockets and Redis.',
+  },
+  {
+    icon: ShieldCheck,
+    title: 'Secure by design',
+    desc: 'JWT auth, encrypted passwords and strict validation.',
+  },
   { icon: Users, title: 'Groups', desc: 'Create groups, assign admins and share invite links.' },
   { icon: Video, title: 'Voice & video', desc: 'Crystal-clear calls with screen sharing.' },
   { icon: ImageIcon, title: 'Rich media', desc: 'Share images, video, documents and voice notes.' },
-  { icon: MessagesSquare, title: 'Reactions & replies', desc: 'React, reply, forward, edit and star messages.' },
+  {
+    icon: MessagesSquare,
+    title: 'Reactions & replies',
+    desc: 'React, reply, forward, edit and star messages.',
+  },
 ];
 
 export default function LandingPage() {

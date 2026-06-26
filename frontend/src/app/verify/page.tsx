@@ -53,7 +53,11 @@ function VerifyInner() {
           className="input text-center text-2xl tracking-[0.5em]"
           placeholder="------"
         />
-        <button type="submit" className="btn-primary w-full py-3" disabled={loading || code.length !== 6}>
+        <button
+          type="submit"
+          className="btn-primary w-full py-3"
+          disabled={loading || code.length !== 6}
+        >
           {loading ? <Spinner className="h-4 w-4" /> : 'Verify'}
         </button>
       </form>

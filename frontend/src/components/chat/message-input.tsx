@@ -169,22 +169,44 @@ export function MessageInput({
       <div className="relative flex items-end gap-2">
         {showEmoji && (
           <div className="absolute bottom-14 left-0 z-30">
-            <EmojiPicker onEmojiClick={(e) => setText((t) => t + e.emoji)} width={320} height={400} />
+            <EmojiPicker
+              onEmojiClick={(e) => setText((t) => t + e.emoji)}
+              width={320}
+              height={400}
+            />
           </div>
         )}
 
-        <button onClick={() => setShowEmoji((v) => !v)} className="btn-ghost h-10 w-10 shrink-0 p-0" title="Emoji">
+        <button
+          onClick={() => setShowEmoji((v) => !v)}
+          className="btn-ghost h-10 w-10 shrink-0 p-0"
+          title="Emoji"
+        >
           <Smile className="h-5 w-5" />
         </button>
-        <button onClick={() => fileRef.current?.click()} className="btn-ghost h-10 w-10 shrink-0 p-0" title="Attach">
+        <button
+          onClick={() => fileRef.current?.click()}
+          className="btn-ghost h-10 w-10 shrink-0 p-0"
+          title="Attach"
+        >
           <Paperclip className="h-5 w-5" />
         </button>
         {onCreatePoll && (
-          <button onClick={onCreatePoll} className="btn-ghost h-10 w-10 shrink-0 p-0" title="Create poll">
+          <button
+            onClick={onCreatePoll}
+            className="btn-ghost h-10 w-10 shrink-0 p-0"
+            title="Create poll"
+          >
             <BarChart3 className="h-5 w-5" />
           </button>
         )}
-        <input ref={fileRef} type="file" multiple hidden onChange={(e) => handleFiles(e.target.files)} />
+        <input
+          ref={fileRef}
+          type="file"
+          multiple
+          hidden
+          onChange={(e) => handleFiles(e.target.files)}
+        />
 
         <textarea
           rows={1}

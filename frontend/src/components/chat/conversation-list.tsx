@@ -26,10 +26,7 @@ export function ConversationListPanel() {
   const [showNewGroup, setShowNewGroup] = useState(false);
 
   const filtered = useMemo(
-    () =>
-      conversations.filter((c) =>
-        (c.title || '').toLowerCase().includes(search.toLowerCase()),
-      ),
+    () => conversations.filter((c) => (c.title || '').toLowerCase().includes(search.toLowerCase())),
     [conversations, search],
   );
 
@@ -120,9 +117,7 @@ export function ConversationListPanel() {
                       <span
                         className={cn(
                           'shrink-0 text-xs',
-                          c.unreadCount > 0
-                            ? 'font-semibold text-nova-600'
-                            : 'text-slate-400',
+                          c.unreadCount > 0 ? 'font-semibold text-nova-600' : 'text-slate-400',
                         )}
                       >
                         {formatConversationTime(c.lastMessageAt)}

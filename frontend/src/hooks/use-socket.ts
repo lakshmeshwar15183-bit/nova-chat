@@ -3,12 +3,7 @@
 import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import {
-  connectSocket,
-  disconnectSocket,
-  refreshSocketAuth,
-  SocketEvents,
-} from '@/lib/socket';
+import { connectSocket, disconnectSocket, refreshSocketAuth, SocketEvents } from '@/lib/socket';
 import { useChatStore } from '@/store/chat-store';
 import { useAuthStore } from '@/store/auth-store';
 import { useConnectionStore } from '@/store/connection-store';
@@ -23,14 +18,8 @@ import type { Message } from '@/lib/types';
 export function useSocket() {
   const user = useAuthStore((s) => s.user);
   const queryClient = useQueryClient();
-  const {
-    addMessage,
-    updateMessage,
-    removeMessage,
-    setTyping,
-    clearTyping,
-    setUserOnline,
-  } = useChatStore();
+  const { addMessage, updateMessage, removeMessage, setTyping, clearTyping, setUserOnline } =
+    useChatStore();
   const { setStatus, markConnected } = useConnectionStore();
 
   useEffect(() => {
