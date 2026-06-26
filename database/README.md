@@ -14,8 +14,11 @@ This folder documents the data model and operational concerns.
 | Auth          | `Session`, `Device`, `OtpToken`                                        |
 | Social graph  | `Contact`                                                              |
 | Conversations | `Conversation`, `ConversationParticipant`, `Group`, `GroupMember`, `GroupInviteLink` |
-| Messaging     | `Message`, `Attachment`, `Reaction`, `MessageReceipt`, `MessageDeletion`, `StarredMessage`, `PinnedMessage` |
+| Messaging     | `Message`, `Attachment`, `Reaction`, `MessageReceipt`, `MessageDeletion`, `StarredMessage`, `PinnedMessage`, `MessageEditHistory`, `Mention` |
+| Polls         | `Poll`, `PollOption`, `PollVote`                                      |
+| Scheduling    | `Draft`, `ScheduledMessage`                                          |
 | Engagement    | `Notification`, `Call`, `CallParticipant`                             |
+| Security      | `AuditLog`                                                           |
 
 ## Entity-relationship diagram
 
@@ -51,7 +54,14 @@ erDiagram
 - **Privacy** controls (`lastSeenPrivacy`, `profilePhotoPrivacy`, `bioPrivacy`) live on
   `Profile` and are enforced in the service layer.
 - **Indexes** are defined on hot read paths: `Message(conversationId, createdAt)`,
+  `Message(conversationId, deletedAt)`, `Message(expiresAt)`,
   `ConversationParticipant(userId, isArchived/isPinned)`, and presence lookups on `User`.
+- **Optimistic locking** — `Message.version` is incremented on every edit via a
+  conditional update, so concurrent edits fail fast instead of silently overwriting.
+- **Soft delete** — `Message.deletedAt` retains rows for audit/history while hiding
+  them from normal reads; `deletedForEveryone` renders a tombstone.
+- **Audit trail** — `AuditLog` records every state-changing request (actor, action,
+  resource, method/path/status, IP, user agent) for compliance and security review.
 
 ## Migrations
 

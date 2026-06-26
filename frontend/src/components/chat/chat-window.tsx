@@ -8,6 +8,7 @@ import { useChatStore } from '@/store/chat-store';
 import { useAuthStore } from '@/store/auth-store';
 import { getSocket } from '@/lib/socket';
 import { FullPageSpinner, Spinner } from '@/components/ui/spinner';
+import { MessageListSkeleton } from '@/components/ui/skeleton';
 import { ChatHeader } from './chat-header';
 import { MessageBubble } from './message-bubble';
 import { MessageInput } from './message-input';
@@ -78,9 +79,7 @@ export function ChatWindow({ conversationId }: { conversationId: string }) {
           </div>
         )}
         {loading ? (
-          <div className="flex justify-center py-10">
-            <Spinner className="text-nova-600" />
-          </div>
+          <MessageListSkeleton />
         ) : (
           messages.map((m, i) => (
             <MessageBubble

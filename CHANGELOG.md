@@ -39,6 +39,17 @@ semantic versioning.
 ### Changed
 - Registered `CsrfGuard` as a global guard alongside the existing rate limiter.
 
+### Frontend
+- **Loading skeletons** — shimmering placeholders for the conversation list and
+  message view; **empty states** and **error states** as reusable components.
+- **Glassmorphism** — `glass` / `glass-strong` utilities and a blurred modal
+  backdrop.
+- **Realtime resilience** — exponential-backoff reconnection, token re-auth on
+  reconnect, browser online/offline detection, an unobtrusive connection banner,
+  and offline sync (conversations refetch + room re-join on reconnect).
+- **Keyboard shortcuts** — `⌘/Ctrl+K` to search, `Esc` to deselect a chat,
+  `⌘/Ctrl+N` for a new chat.
+
 ## [1.0.0] - Initial release
 
 ### Added

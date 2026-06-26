@@ -17,13 +17,26 @@ Inspired by the WhatsApp Web experience, built as an original project with a cle
 ## ✨ Features
 
 - **Auth** — email/password, email OTP verification, Google OAuth, JWT access + rotating refresh tokens, multi-device session management, forgot/reset password.
-- **Messaging** — real-time one-to-one & group chat, replies, forwarding, edit, delete-for-me / delete-for-everyone, reactions, starred & pinned, typing indicators, presence (online / last seen), delivery & read receipts, infinite history with cursor pagination.
+- **Messaging** — real-time one-to-one & group chat, replies, forwarding, edit
+  (with edit history + optimistic locking), delete-for-me / delete-for-everyone,
+  reactions, starred & **pinned**, **mentions** (`@username`), **polls**,
+  **scheduled messages**, **drafts**, **link previews**, typing indicators,
+  presence (online / last seen), delivery & read receipts, soft delete, and
+  infinite history with cursor pagination.
 - **Media** — images, video, audio, voice notes, PDFs, ZIPs and documents with drag-and-drop uploads, media gallery and downloads (Supabase Storage with local fallback).
 - **Groups** — create groups, admins & owner roles, add/remove members, invite links, group avatar & description, permission controls.
 - **Calls** — voice / video signaling over WebSocket (WebRTC relay), with mute & camera toggle hooks.
 - **Search** — across messages, contacts, groups and media.
 - **Settings** — light / dark / system theme, language selector, notification & privacy preferences.
-- **Security** — bcrypt password hashing, Helmet, rate limiting, strict input validation, CORS, parameterised queries via Prisma.
+- **Security** — bcrypt password hashing, Helmet, rate limiting, **origin-based CSRF
+  protection**, **input sanitization**, **audit logging**, strict input validation,
+  CORS, parameterised queries via Prisma.
+
+### Frontend experience
+- Mobile-first responsive UI, dark/light themes, glassmorphism surfaces, loading
+  skeletons, empty & error states, toast notifications, keyboard shortcuts
+  (`⌘/Ctrl+K`, `Esc`, `⌘/Ctrl+N`) and resilient realtime (auto-reconnect with
+  offline sync).
 
 ## 🧱 Tech stack
 

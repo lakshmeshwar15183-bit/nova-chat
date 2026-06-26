@@ -50,6 +50,17 @@
   .card {
     @apply rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900;
   }
+
+  /* Glassmorphism surfaces — translucent, blurred, subtle border. */
+  .glass {
+    @apply border border-white/30 bg-white/60 shadow-lg backdrop-blur-xl
+      dark:border-white/10 dark:bg-slate-900/50;
+  }
+
+  .glass-strong {
+    @apply border border-white/40 bg-white/80 shadow-xl backdrop-blur-2xl
+      dark:border-white/10 dark:bg-slate-900/70;
+  }
 }
 
 /* WhatsApp-like chat background pattern (original, subtle dot grid). */

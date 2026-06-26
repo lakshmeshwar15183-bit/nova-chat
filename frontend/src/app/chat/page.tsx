@@ -1,14 +1,24 @@
 'use client';
 
+import { useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { MessagesSquare } from 'lucide-react';
 import { useChatStore } from '@/store/chat-store';
+import { useKeyboardShortcuts } from '@/hooks/use-keyboard-shortcuts';
 import { Sidebar } from '@/components/chat/sidebar';
 import { ConversationListPanel } from '@/components/chat/conversation-list';
 import { ChatWindow } from '@/components/chat/chat-window';
 import { cn } from '@/lib/utils';
 
 export default function ChatPage() {
+  const router = useRouter();
   const activeId = useChatStore((s) => s.activeConversationId);
+  const setActive = useChatStore((s) => s.setActiveConversation);
+
+  useKeyboardShortcuts({
+    onSearch: useCallback(() => router.push('/search'), [router]),
+    onEscape: useCallback(() => setActive(null), [setActive]),
+  });
 
   return (
     <div className="flex h-full">

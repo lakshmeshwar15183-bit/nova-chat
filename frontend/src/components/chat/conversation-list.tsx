@@ -1,13 +1,14 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Archive, PenSquare, Search, Users } from 'lucide-react';
+import { Archive, MessagesSquare, PenSquare, Search, Users } from 'lucide-react';
 import { useConversations } from '@/hooks/use-conversations';
 import { useChatStore } from '@/store/chat-store';
 import { conversationService } from '@/lib/services';
 import { cn, formatConversationTime } from '@/lib/utils';
 import { Avatar } from '@/components/ui/avatar';
-import { Spinner } from '@/components/ui/spinner';
+import { ConversationListSkeleton } from '@/components/ui/skeleton';
+import { EmptyState } from '@/components/ui/empty-state';
 import { NewChatModal } from './new-chat-modal';
 import { CreateGroupModal } from './create-group-modal';
 import type { Conversation } from '@/lib/types';
@@ -74,13 +75,25 @@ export function ConversationListPanel() {
 
       <div className="chat-scrollbar flex-1 overflow-y-auto">
         {isLoading ? (
-          <div className="flex justify-center py-10">
-            <Spinner className="text-nova-600" />
-          </div>
+          <ConversationListSkeleton />
         ) : filtered.length === 0 ? (
-          <div className="px-6 py-10 text-center text-sm text-slate-500">
-            No conversations yet. Start a new chat!
-          </div>
+          <EmptyState
+            icon={search ? Search : MessagesSquare}
+            title={search ? 'No matches' : 'No conversations yet'}
+            description={
+              search
+                ? 'Try a different search term.'
+                : 'Start a new chat or create a group to begin messaging.'
+            }
+            action={
+              !search ? (
+                <button onClick={() => setShowNewChat(true)} className="btn-primary">
+                  <PenSquare className="h-4 w-4" />
+                  New chat
+                </button>
+              ) : undefined
+            }
+          />
         ) : (
           filtered.map((c) => {
             const online =

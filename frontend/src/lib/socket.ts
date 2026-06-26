@@ -9,6 +9,13 @@ export function getSocket(): Socket {
       autoConnect: false,
       transports: ['websocket'],
       auth: { token: tokenStore.get() },
+      // Resilient reconnection with exponential backoff (no polling).
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 10000,
+      randomizationFactor: 0.5,
+      timeout: 10000,
     });
   }
   return socket;
@@ -16,9 +23,15 @@ export function getSocket(): Socket {
 
 export function connectSocket(): Socket {
   const s = getSocket();
+  // Always attach the freshest access token before (re)connecting.
   s.auth = { token: tokenStore.get() };
   if (!s.connected) s.connect();
   return s;
+}
+
+/** Refreshes the auth token on the live socket so reconnects stay authenticated. */
+export function refreshSocketAuth(): void {
+  if (socket) socket.auth = { token: tokenStore.get() };
 }
 
 export function disconnectSocket() {
@@ -31,6 +44,9 @@ export const SocketEvents = {
   MessageUpdated: 'message_updated',
   MessageDeleted: 'message_deleted',
   MessageReaction: 'message_reaction',
+  MessagePinned: 'message_pinned',
+  MessageUnpinned: 'message_unpinned',
+  PollUpdated: 'poll_updated',
   Typing: 'typing',
   StopTyping: 'stop_typing',
   ReadReceipt: 'read_receipt',

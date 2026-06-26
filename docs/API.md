@@ -63,7 +63,53 @@ Authenticated endpoints require `Authorization: Bearer <accessToken>`.
 | POST   | `/messages/:id/forward`                    | conversationIds[]    |
 | POST   | `/messages/:id/react`                      | emoji                |
 | POST   | `/messages/:id/star`                       | Toggle star          |
+| POST   | `/messages/:id/pin`                        | Toggle pin           |
+| GET    | `/conversations/:id/pinned`                | Pinned messages      |
+| GET    | `/messages/:id/history`                    | Edit history         |
 | GET    | `/messages/starred`                        | Starred messages     |
+
+### Editing with optimistic locking
+
+`PATCH /messages/:id` accepts an optional `version`. If supplied and it does not
+match the server's current version, the API responds `409 Conflict` so the client
+can refetch and retry — preventing lost updates.
+
+## Drafts
+
+| Method | Path                                  | Notes                    |
+| ------ | ------------------------------------- | ------------------------ |
+| GET    | `/drafts`                             | All of the user's drafts |
+| GET    | `/conversations/:id/draft`            | Draft for a conversation |
+| PUT    | `/conversations/:id/draft`            | Save (empty clears it)   |
+| DELETE | `/conversations/:id/draft`            | Delete                   |
+
+## Scheduled messages
+
+| Method | Path                                          | Notes                          |
+| ------ | --------------------------------------------- | ------------------------------ |
+| GET    | `/scheduled-messages`                         | Pending scheduled messages     |
+| POST   | `/conversations/:id/scheduled-messages`       | `content`, `scheduledFor` (ISO)|
+| DELETE | `/scheduled-messages/:id`                     | Cancel a pending message       |
+
+A 30-second cron dispatcher sends due messages through the normal realtime pipeline.
+
+## Polls
+
+| Method | Path                              | Notes                                  |
+| ------ | --------------------------------- | -------------------------------------- |
+| POST   | `/conversations/:id/polls`        | `question`, `options[]`, `allowMultiple`, `closesInSeconds` |
+| GET    | `/polls/:id`                      | Results with per-option counts/percent |
+| POST   | `/polls/:id/vote`                 | `optionIds[]`                          |
+| POST   | `/polls/:id/close`                | Close (creator only)                   |
+
+## Link previews
+
+`GET /link-preview?url=` — fetches Open Graph metadata (title/description/image/
+siteName) with Redis caching, request timeout and byte limits.
+
+## Audit
+
+`GET /audit/me` — the authenticated user's own activity log (paginated).
 
 ## Groups — `/groups`
 
@@ -99,6 +145,8 @@ Connect to the backend origin with `auth: { token: <accessToken> }`.
 | server → client  | `message_updated`    | Message                                  |
 | server → client  | `message_deleted`    | `{ conversationId, messageId }`          |
 | server → client  | `message_reaction`   | `{ messageId, reactions }`               |
+| server → client  | `message_pinned` / `message_unpinned` | `{ messageId }`         |
+| server → client  | `poll_updated`       | `{ messageId, poll }`                    |
 | client → server  | `typing` / `stop_typing` | `{ conversationId }`                 |
 | client → server  | `mark_read`          | `{ conversationId }`                     |
 | server → client  | `read_receipt`       | `{ conversationId, userId, readAt }`     |
