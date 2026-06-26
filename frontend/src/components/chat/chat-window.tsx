@@ -11,8 +11,11 @@ import { FullPageSpinner, Spinner } from '@/components/ui/spinner';
 import { MessageListSkeleton } from '@/components/ui/skeleton';
 import { ChatHeader } from './chat-header';
 import { MessageBubble } from './message-bubble';
+import { PollBubble } from './poll-bubble';
+import { PinnedBanner } from './pinned-banner';
 import { MessageInput } from './message-input';
 import { ForwardModal } from './forward-modal';
+import { CreatePollModal } from './create-poll-modal';
 import type { Message } from '@/lib/types';
 
 export function ChatWindow({ conversationId }: { conversationId: string }) {
@@ -23,6 +26,7 @@ export function ChatWindow({ conversationId }: { conversationId: string }) {
   const [replyTo, setReplyTo] = useState<Message | null>(null);
   const [editing, setEditing] = useState<Message | null>(null);
   const [forwarding, setForwarding] = useState<Message | null>(null);
+  const [showPoll, setShowPoll] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -67,6 +71,7 @@ export function ChatWindow({ conversationId }: { conversationId: string }) {
   return (
     <div className="flex h-full flex-col">
       <ChatHeader conversation={conversation} />
+      <PinnedBanner conversationId={conversationId} />
 
       <div
         ref={scrollRef}
@@ -81,21 +86,25 @@ export function ChatWindow({ conversationId }: { conversationId: string }) {
         {loading ? (
           <MessageListSkeleton />
         ) : (
-          messages.map((m, i) => (
-            <MessageBubble
-              key={m.id}
-              message={m}
-              isOwn={m.senderId === userId}
-              showSender={
-                conversation.type === 'GROUP' &&
-                m.senderId !== userId &&
-                messages[i - 1]?.senderId !== m.senderId
-              }
-              onReply={setReplyTo}
-              onEdit={setEditing}
-              onForward={setForwarding}
-            />
-          ))
+          messages.map((m, i) => {
+            const showSender =
+              conversation.type === 'GROUP' &&
+              m.senderId !== userId &&
+              messages[i - 1]?.senderId !== m.senderId;
+            return m.type === 'POLL' ? (
+              <PollBubble key={m.id} message={m} isOwn={m.senderId === userId} showSender={showSender} />
+            ) : (
+              <MessageBubble
+                key={m.id}
+                message={m}
+                isOwn={m.senderId === userId}
+                showSender={showSender}
+                onReply={setReplyTo}
+                onEdit={setEditing}
+                onForward={setForwarding}
+              />
+            );
+          })
         )}
         {typing.length > 0 && (
           <div className="px-4 py-1 text-sm italic text-slate-400">
@@ -111,10 +120,12 @@ export function ChatWindow({ conversationId }: { conversationId: string }) {
         editing={editing}
         onClearReply={() => setReplyTo(null)}
         onClearEdit={() => setEditing(null)}
+        onCreatePoll={() => setShowPoll(true)}
       />
 
-      {forwarding && (
-        <ForwardModal message={forwarding} onClose={() => setForwarding(null)} />
+      {forwarding && <ForwardModal message={forwarding} onClose={() => setForwarding(null)} />}
+      {showPoll && (
+        <CreatePollModal conversationId={conversationId} onClose={() => setShowPoll(false)} />
       )}
     </div>
   );

@@ -49,6 +49,20 @@ semantic versioning.
   and offline sync (conversations refetch + room re-join on reconnect).
 - **Keyboard shortcuts** — `⌘/Ctrl+K` to search, `Esc` to deselect a chat,
   `⌘/Ctrl+N` for a new chat.
+- **Drafts UI** — the composer auto-saves a per-conversation draft (debounced) and
+  restores it when you reopen the chat; cleared on send.
+- **Pinned messages UI** — a "Pin/Unpin" action in the message menu and a live
+  pinned-messages banner at the top of the conversation (cycles through pins).
+- **Interactive polls UI** — create polls from the composer, vote (single or
+  multiple choice), and see live results with percentage bars that update in real
+  time via `poll_updated`.
+
+### Internal
+- Extracted a shared `messagePreview()` helper (used by the conversation list,
+  pinned banner and notifications) to remove duplicated preview logic.
+- Backend message payloads now include `pollId` so poll messages can resolve their
+  results; `no-unused-vars` lint rule tuned (`ignoreRestSiblings`) — backend lint is
+  warning-free.
 
 ## [1.0.0] - Initial release
 

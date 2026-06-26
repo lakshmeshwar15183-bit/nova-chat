@@ -1,5 +1,13 @@
 export type ConversationType = 'DIRECT' | 'GROUP';
-export type MessageType = 'TEXT' | 'IMAGE' | 'VIDEO' | 'AUDIO' | 'VOICE' | 'DOCUMENT' | 'SYSTEM';
+export type MessageType =
+  | 'TEXT'
+  | 'IMAGE'
+  | 'VIDEO'
+  | 'AUDIO'
+  | 'VOICE'
+  | 'DOCUMENT'
+  | 'SYSTEM'
+  | 'POLL';
 export type MessageStatus = 'SENT' | 'DELIVERED' | 'READ';
 export type AttachmentType =
   | 'IMAGE'
@@ -75,7 +83,53 @@ export interface Message {
   attachments: Attachment[];
   reactions: Reaction[];
   starred?: boolean;
+  pinned?: boolean;
+  version?: number;
+  pollId?: string | null;
+  poll?: PollResult | null;
   createdAt: string;
+}
+
+export interface PollOptionResult {
+  id: string;
+  text: string;
+  votes: number;
+  percentage: number;
+  votedByMe: boolean;
+}
+
+export interface PollResult {
+  id: string;
+  messageId: string;
+  question: string;
+  allowMultiple: boolean;
+  closed: boolean;
+  closesAt?: string | null;
+  totalVotes: number;
+  options: PollOptionResult[];
+}
+
+export interface Draft {
+  conversationId: string;
+  content: string;
+  updatedAt?: string;
+}
+
+export interface LinkPreview {
+  url: string;
+  title: string | null;
+  description: string | null;
+  image: string | null;
+  siteName: string | null;
+}
+
+export interface ScheduledMessage {
+  id: string;
+  conversationId: string;
+  content: string;
+  type: MessageType;
+  scheduledFor: string;
+  status: 'PENDING' | 'SENT' | 'CANCELLED' | 'FAILED';
 }
 
 export interface Conversation {

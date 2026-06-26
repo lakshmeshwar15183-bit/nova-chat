@@ -4,9 +4,13 @@ import type {
   AuthResponse,
   Contact,
   Conversation,
+  Draft,
   Group,
+  LinkPreview,
   Message,
   PaginatedMessages,
+  PollResult,
+  ScheduledMessage,
   User,
   UserSettings,
 } from './types';
@@ -75,7 +79,8 @@ export const messageService = {
     conversationId: string,
     data: { content?: string; type?: string; replyToId?: string; attachments?: unknown[] },
   ) => unwrap<Message>(api.post(`/conversations/${conversationId}/messages`, data)),
-  edit: (id: string, content: string) => unwrap<Message>(api.patch(`/messages/${id}`, { content })),
+  edit: (id: string, content: string, version?: number) =>
+    unwrap<Message>(api.patch(`/messages/${id}`, { content, version })),
   deleteForMe: (id: string) => unwrap(api.delete(`/messages/${id}/me`)),
   deleteForEveryone: (id: string) => unwrap(api.delete(`/messages/${id}/everyone`)),
   forward: (id: string, conversationIds: string[]) =>
@@ -83,6 +88,53 @@ export const messageService = {
   react: (id: string, emoji: string) => unwrap(api.post(`/messages/${id}/react`, { emoji })),
   star: (id: string) => unwrap<{ messageId: string; starred: boolean }>(api.post(`/messages/${id}/star`)),
   starred: () => unwrap(api.get('/messages/starred')),
+  pin: (id: string) =>
+    unwrap<{ messageId: string; pinned: boolean }>(api.post(`/messages/${id}/pin`)),
+  listPinned: (conversationId: string) =>
+    unwrap<Message[]>(api.get(`/conversations/${conversationId}/pinned`)),
+  history: (id: string) =>
+    unwrap<{ id: string; previousContent: string | null; editedAt: string }[]>(
+      api.get(`/messages/${id}/history`),
+    ),
+};
+
+// ---- Drafts -----------------------------------------------------------------
+
+export const draftService = {
+  get: (conversationId: string) =>
+    unwrap<Draft | null>(api.get(`/conversations/${conversationId}/draft`)),
+  save: (conversationId: string, content: string) =>
+    unwrap<Draft>(api.put(`/conversations/${conversationId}/draft`, { content })),
+  remove: (conversationId: string) =>
+    unwrap(api.delete(`/conversations/${conversationId}/draft`)),
+};
+
+// ---- Polls ------------------------------------------------------------------
+
+export const pollService = {
+  create: (
+    conversationId: string,
+    data: { question: string; options: string[]; allowMultiple?: boolean; closesInSeconds?: number },
+  ) => unwrap<PollResult>(api.post(`/conversations/${conversationId}/polls`, data)),
+  results: (pollId: string) => unwrap<PollResult>(api.get(`/polls/${pollId}`)),
+  vote: (pollId: string, optionIds: string[]) =>
+    unwrap<PollResult>(api.post(`/polls/${pollId}/vote`, { optionIds })),
+  close: (pollId: string) => unwrap<PollResult>(api.post(`/polls/${pollId}/close`)),
+};
+
+// ---- Scheduled messages -----------------------------------------------------
+
+export const scheduledService = {
+  list: () => unwrap<ScheduledMessage[]>(api.get('/scheduled-messages')),
+  create: (conversationId: string, data: { content: string; scheduledFor: string }) =>
+    unwrap<ScheduledMessage>(api.post(`/conversations/${conversationId}/scheduled-messages`, data)),
+  cancel: (id: string) => unwrap(api.delete(`/scheduled-messages/${id}`)),
+};
+
+// ---- Link previews ----------------------------------------------------------
+
+export const linkPreviewService = {
+  get: (url: string) => unwrap<LinkPreview>(api.get('/link-preview', { params: { url } })),
 };
 
 // ---- Groups -----------------------------------------------------------------

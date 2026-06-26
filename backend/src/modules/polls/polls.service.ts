@@ -61,6 +61,7 @@ export class PollsService {
       senderId: userId,
       type: MessageType.POLL,
       content: dto.question,
+      pollId: result.id,
       poll: result,
       createdAt: poll.message.createdAt,
     });

@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { Paperclip, SendHorizonal, Smile, X } from 'lucide-react';
+import { BarChart3, Paperclip, SendHorizonal, Smile, X } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { messageService, uploadService } from '@/lib/services';
+import { draftService, messageService, uploadService } from '@/lib/services';
 import { apiErrorMessage } from '@/lib/api';
 import { getSocket } from '@/lib/socket';
 import { useAuthStore } from '@/store/auth-store';
@@ -13,25 +13,75 @@ import type { Message } from '@/lib/types';
 
 const EmojiPicker = dynamic(() => import('emoji-picker-react'), { ssr: false });
 
+const DRAFT_DEBOUNCE_MS = 700;
+
 interface Props {
   conversationId: string;
   replyTo: Message | null;
   editing: Message | null;
   onClearReply: () => void;
   onClearEdit: () => void;
+  /** When provided, shows a "create poll" action in the composer. */
+  onCreatePoll?: () => void;
 }
 
-export function MessageInput({ conversationId, replyTo, editing, onClearReply, onClearEdit }: Props) {
+export function MessageInput({
+  conversationId,
+  replyTo,
+  editing,
+  onClearReply,
+  onClearEdit,
+  onCreatePoll,
+}: Props) {
   const [text, setText] = useState('');
   const [showEmoji, setShowEmoji] = useState(false);
   const [sending, setSending] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const typingTimeout = useRef<ReturnType<typeof setTimeout>>();
+  const dirty = useRef(false);
+  const skipNextSave = useRef(false);
   const enterToSend = useAuthStore((s) => s.user?.settings?.enterToSend ?? true);
 
+  // Restore a saved draft when the conversation changes.
+  useEffect(() => {
+    let cancelled = false;
+    dirty.current = false;
+    setText('');
+    draftService
+      .get(conversationId)
+      .then((draft) => {
+        if (!cancelled && draft?.content) {
+          skipNextSave.current = true;
+          setText(draft.content);
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [conversationId]);
+
+  // Show the edited message's content when entering edit mode.
   useEffect(() => {
     if (editing) setText(editing.content || '');
   }, [editing]);
+
+  // Debounced draft persistence (never persists while editing an existing message).
+  useEffect(() => {
+    if (editing || !dirty.current) return;
+    if (skipNextSave.current) {
+      skipNextSave.current = false;
+      return;
+    }
+    const handle = setTimeout(() => {
+      const content = text.trim();
+      const action = content
+        ? draftService.save(conversationId, content)
+        : draftService.remove(conversationId);
+      void action.catch(() => undefined);
+    }, DRAFT_DEBOUNCE_MS);
+    return () => clearTimeout(handle);
+  }, [text, conversationId, editing]);
 
   const emitTyping = () => {
     const socket = getSocket();
@@ -48,15 +98,14 @@ export function MessageInput({ conversationId, replyTo, editing, onClearReply, o
     setSending(true);
     try {
       if (editing) {
-        await messageService.edit(editing.id, content);
+        await messageService.edit(editing.id, content, editing.version);
         onClearEdit();
       } else {
-        await messageService.send(conversationId, {
-          content,
-          replyToId: replyTo?.id,
-        });
+        await messageService.send(conversationId, { content, replyToId: replyTo?.id });
         onClearReply();
+        void draftService.remove(conversationId).catch(() => undefined);
       }
+      dirty.current = false;
       setText('');
       setShowEmoji(false);
       getSocket().emit('stop_typing', { conversationId });
@@ -111,10 +160,7 @@ export function MessageInput({ conversationId, replyTo, editing, onClearReply, o
               {editing?.content || replyTo?.content || 'Attachment'}
             </p>
           </div>
-          <button
-            onClick={editing ? onClearEdit : onClearReply}
-            className="btn-ghost h-7 w-7 p-0"
-          >
+          <button onClick={editing ? onClearEdit : onClearReply} className="btn-ghost h-7 w-7 p-0">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -123,32 +169,28 @@ export function MessageInput({ conversationId, replyTo, editing, onClearReply, o
       <div className="relative flex items-end gap-2">
         {showEmoji && (
           <div className="absolute bottom-14 left-0 z-30">
-            <EmojiPicker
-              onEmojiClick={(e) => setText((t) => t + e.emoji)}
-              width={320}
-              height={400}
-            />
+            <EmojiPicker onEmojiClick={(e) => setText((t) => t + e.emoji)} width={320} height={400} />
           </div>
         )}
 
-        <button onClick={() => setShowEmoji((v) => !v)} className="btn-ghost h-10 w-10 shrink-0 p-0">
+        <button onClick={() => setShowEmoji((v) => !v)} className="btn-ghost h-10 w-10 shrink-0 p-0" title="Emoji">
           <Smile className="h-5 w-5" />
         </button>
-        <button onClick={() => fileRef.current?.click()} className="btn-ghost h-10 w-10 shrink-0 p-0">
+        <button onClick={() => fileRef.current?.click()} className="btn-ghost h-10 w-10 shrink-0 p-0" title="Attach">
           <Paperclip className="h-5 w-5" />
         </button>
-        <input
-          ref={fileRef}
-          type="file"
-          multiple
-          hidden
-          onChange={(e) => handleFiles(e.target.files)}
-        />
+        {onCreatePoll && (
+          <button onClick={onCreatePoll} className="btn-ghost h-10 w-10 shrink-0 p-0" title="Create poll">
+            <BarChart3 className="h-5 w-5" />
+          </button>
+        )}
+        <input ref={fileRef} type="file" multiple hidden onChange={(e) => handleFiles(e.target.files)} />
 
         <textarea
           rows={1}
           value={text}
           onChange={(e) => {
+            dirty.current = true;
             setText(e.target.value);
             emitTyping();
           }}

@@ -8,6 +8,7 @@ import {
   Forward,
   MoreVertical,
   Pencil,
+  Pin,
   Smile,
   Star,
   Trash2,
@@ -61,6 +62,16 @@ export function MessageBubble({ message, isOwn, showSender, onReply, onEdit, onF
       const res = await messageService.star(message.id);
       updateMessage({ id: message.id, conversationId: message.conversationId, starred: res.starred });
       toast.success(res.starred ? 'Starred' : 'Unstarred');
+    } catch (err) {
+      toast.error(apiErrorMessage(err));
+    }
+  };
+
+  const pin = async () => {
+    setMenuOpen(false);
+    try {
+      const res = await messageService.pin(message.id);
+      toast.success(res.pinned ? 'Pinned' : 'Unpinned');
     } catch (err) {
       toast.error(apiErrorMessage(err));
     }
@@ -206,6 +217,7 @@ export function MessageBubble({ message, isOwn, showSender, onReply, onEdit, onF
             <MenuItem icon={CornerUpLeft} label="Reply" onClick={() => { setMenuOpen(false); onReply(message); }} />
             <MenuItem icon={Forward} label="Forward" onClick={() => { setMenuOpen(false); onForward(message); }} />
             <MenuItem icon={Star} label={message.starred ? 'Unstar' : 'Star'} onClick={star} />
+            <MenuItem icon={Pin} label={message.pinned ? 'Unpin' : 'Pin'} onClick={pin} />
             {isOwn && message.type === 'TEXT' && (
               <MenuItem icon={Pencil} label="Edit" onClick={() => { setMenuOpen(false); onEdit(message); }} />
             )}

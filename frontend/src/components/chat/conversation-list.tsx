@@ -6,6 +6,7 @@ import { useConversations } from '@/hooks/use-conversations';
 import { useChatStore } from '@/store/chat-store';
 import { conversationService } from '@/lib/services';
 import { cn, formatConversationTime } from '@/lib/utils';
+import { messagePreview } from '@/lib/message-preview';
 import { Avatar } from '@/components/ui/avatar';
 import { ConversationListSkeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -130,7 +131,7 @@ export function ConversationListPanel() {
                   </div>
                   <div className="flex items-center justify-between gap-2">
                     <span className="truncate text-sm text-slate-500 dark:text-slate-400">
-                      {previewText(c)}
+                      {messagePreview(c.lastMessage)}
                     </span>
                     <div className="flex shrink-0 items-center gap-1">
                       {c.isPinned && <span className="text-xs text-slate-400">📌</span>}
@@ -152,17 +153,4 @@ export function ConversationListPanel() {
       {showNewGroup && <CreateGroupModal onClose={() => setShowNewGroup(false)} />}
     </div>
   );
-}
-
-function previewText(c: Conversation): string {
-  const m = c.lastMessage;
-  if (!m) return 'No messages yet';
-  if (m.deletedForEveryone) return '🚫 This message was deleted';
-  if (m.type === 'IMAGE') return '📷 Photo';
-  if (m.type === 'VIDEO') return '🎥 Video';
-  if (m.type === 'VOICE') return '🎤 Voice message';
-  if (m.type === 'AUDIO') return '🎵 Audio';
-  if (m.type === 'DOCUMENT') return '📄 Document';
-  if (m.type === 'SYSTEM') return m.content || '';
-  return m.content || '';
 }

@@ -37,6 +37,7 @@ const messageInclude = {
     },
   },
   receipts: true,
+  poll: { select: { id: true } },
 } as const;
 
 @Injectable()
@@ -361,6 +362,7 @@ export class MessagesService {
       receipts: message.receipts ?? [],
       status: message.status,
       version: message.version,
+      pollId: message.poll?.id ?? null,
       starred: starredSet.has(message.id),
       createdAt: message.createdAt,
     };
